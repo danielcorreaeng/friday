@@ -35,6 +35,17 @@ globalParameter['maximum_similarity_threshold'] = 0.80
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
 
+globalParameter['background'] = 'External/bot/background/1.png'
+globalParameter['img_max_height_mobile'] = '180%'
+globalParameter['img_max_height_web'] = '100%'
+globalParameter['img_max_width_mobile'] = '110%'
+globalParameter['img_max_width_web'] = '100%'
+globalParameter['chat_height_web'] = '2em'
+globalParameter['chat_height_mobile'] = '2em'
+globalParameter['chat_font_height_web'] = 'medium'
+globalParameter['chat_font_height_mobile'] = 'xx-large'
+globalParameter['max_width_web'] = '1200px'
+
 app = Flask(__name__, static_url_path="/External", static_folder='External')
 CORS(app)
 
@@ -152,21 +163,26 @@ def botresponse():
 def index():
     return str(Main.__doc__) + " | ip server : " +  str(globalParameter['LocalIp']) + ":" + str(globalParameter['LocalPort'])
 
+@app.route('/reload')
+def ReloadParameters():
+    LoadParameters()
+    return 'ok'
+
 @app.route('/bot')
 def makePageBot():
     ext_bootstrap_css = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css'
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
-    background = 'External/bot/background/1.png'
-    img_max_height_mobile = '180%'
-    img_max_height_web = '100%'
-    img_max_width_mobile = '110%'
-    img_max_width_web = '100%'
-    chat_height_web = '2em'
-    chat_height_mobile = '2em'
-    chat_font_height_web = 'medium'
-    chat_font_height_mobile = 'xx-large'
-    max_width_web = '1200px'
+    background = globalParameter['background']
+    img_max_height_mobile = globalParameter['img_max_height_mobile']
+    img_max_height_web = globalParameter['img_max_height_web']
+    img_max_width_mobile = globalParameter['img_max_width_mobile']
+    img_max_width_web = globalParameter['img_max_width_web']
+    chat_height_web = globalParameter['chat_height_web']
+    chat_height_mobile = globalParameter['chat_height_mobile']
+    chat_font_height_web = globalParameter['chat_font_height_web']
+    chat_font_height_mobile = globalParameter['chat_font_height_mobile']
+    max_width_web = globalParameter['max_width_web']
     
     PAGE_HEAD = '<head>'
     PAGE_STYLE = '<style>'
@@ -196,10 +212,9 @@ def makePageBot():
     PAGE_SPRIPT += 'img_agent_reaction.push(["sad","External/bot/agent/sad_2.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["surprised","External/bot/agent/surprised.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["surprised","External/bot/agent/surprised_2.png"]);'
-    PAGE_SPRIPT += 'list_reaction_translations.push(["kkk","happy"]);'
-    PAGE_SPRIPT += 'list_reaction_translations.push([":P","happy"]);'
-    PAGE_SPRIPT += 'list_reaction_translations.push(["fdp","angry"]);'
-    PAGE_SPRIPT += 'list_reaction_translations.push(["sexy","surprised"]);'
+
+    for list_reaction_translations in globalParameter['BotReactionTranslations']:
+        PAGE_SPRIPT += 'list_reaction_translations.push(["' + list_reaction_translations[1] + '","' + list_reaction_translations[0] + '"]);'    
 
     PAGE_SPRIPT += '''for (id in img_agent_reaction) {if(img_agent_reaction[id][0] in dict_img_agent_reaction_lenghts){var value = dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]];dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]] = value + 1;}else{dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]] = 1;}}img_agent.src = GetImageReaction("normal"); time_out_reaction = setTimeout(function(){ SetImageReaction("normal"); }, time_out_reaction_delay); });'''
     PAGE_SPRIPT += '''\nfunction GetWindowsCenter(target){return Math.max(0, (($(window).width() - $(target).outerWidth()) / 2) + $(window).scrollLeft());}'''
@@ -212,12 +227,12 @@ def makePageBot():
     PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", "''' + str(request.base_url) + '''response''' + '''", true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", "''' + str(request.base_url) + '''");xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();}};xhr.send(data);}'''
 
     PAGE_SPRIPT += '''</script>'''
-    PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode === 13) { SendChat();input.focus();}; if (event.keyCode === 8) {input.value=''}; });</script>'''
+    PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
 
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
 
-def GetCorrectPath():
+def LoadParameters():
     global globalParameter
 
     globalParameter['PathExecutable'] = sys.executable
@@ -240,10 +255,12 @@ def GetCorrectPath():
             config.read_file(fp)
             sections = config.sections()
             if('Parameters' in sections):
-                if('PathJarvis' in config['Parameters']):
-                    globalParameter['PathJarvis'] = config['Parameters']['PathJarvis']
-                if('PathExecutable' in config['Parameters']):
-                    globalParameter['PathExecutable'] = config['Parameters']['PathExecutable']
+                for key in config['Parameters']:                    
+                    for globalParameter_key in globalParameter:    
+                        if globalParameter_key.lower()==key.lower():
+                            globalParameter[globalParameter_key]=str(config['Parameters'][key])
+                            print(key + "=" + str(config['Parameters'][key]))
+
             if('BotImgReaction' in sections):                    
                 for key in config['BotImgReaction']:
                     #reaction_xxx = image  
@@ -284,7 +301,7 @@ def Main():
 
     global globalParameter
 
-    GetCorrectPath()
+    LoadParameters()
 
     try:
         if(globalParameter['MAINWEBSERVER'] == True):
