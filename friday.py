@@ -54,6 +54,22 @@ class TestCases(unittest.TestCase):
         check = True
         self.assertTrue(check)
 
+def Run(command, parameters=None, wait=False):
+    
+    if(globalParameter['PathJarvis'] == None):
+        return
+
+    if(parameters != None):
+        proc = subprocess.Popen([command, parameters], stdout=subprocess.PIPE, shell=None)
+    else:
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=None)
+
+    if(wait == True):
+        proc.communicate()
+
+def RunJarvis(tags):
+	Run(globalParameter['PathExecutable'] + ' ' + globalParameter['PathJarvis'] + ' ' + tags, None, False)          
+
 class MyChatBot():
     def __init__(self):
         noob = False        
@@ -101,6 +117,23 @@ class MyChatBot():
             print('training4memory corpus.portuguese')
 
     def response(self, ask):
+        target = None
+        if(str(ask).lower().find('[img]') >= 0):
+            target = '[img]'
+        if(str(ask).lower().find('[file]') >= 0):
+            target = '[file]'
+        if(str(ask).lower().find('[link]') >= 0):
+            target = '[link]'            
+
+        if(target != None and str(ask).lower().find('[base|tags]') >= 0):
+            tags = ask.split('[base|tags]')[1]
+            target = ask.split('[base|tags]')[0].replace(target,'')
+            target = target[1:-1].replace(' ','_')
+            print(tags)
+            print(target)
+            RunJarvis('bookmark -base=services -u ' + str(tags) + " " + target)
+            return 'got it! :P'
+
         if(str(ask).lower().find('[learn]') >= 0 and str(ask).lower().find('[answer]') >= 0):
             answer = ask.split('[answer]')[1]
             ask = ask.split('[answer]')[0].replace('[learn]','')            
@@ -108,7 +141,7 @@ class MyChatBot():
 
         res = self.chatbot.get_response(ask)
 
-        return res            
+        return res           
 
 def BotResponse(ask):
     bot = MyChatBot()
@@ -117,36 +150,6 @@ def BotResponse(ask):
     res = bot.response(ask)   
     print(res) 
     return str(res)
-
-def ChatBotLoop(Learn = False):    
-    bot = MyChatBot()
-    loop = True    
-    
-    while(loop):
-        ask = input(">")
-        
-        if(ask == None):
-            print('...')
-            continue
-
-        res = bot.response(ask)
-
-        print(res)
-
-        if(Learn==True and str(res) == "Não entendi"):
-            print("Deseja que eu aprenda?")
-            res = input(">")
-            if(res == 'sim'):
-                print(ask)
-                res4train = input(">")
-                bot.training4conversation([ask, str(res4train)])          
-        else:
-            pass
-
-        if(ask == 'tchau'):
-            loop = False
-            break
-    pass 
 
 @app.route('/botresponse',methods = ['POST', 'GET'])
 def botresponse():
@@ -280,22 +283,6 @@ def LoadParameters():
     else:
         print("Jarvis command enabled")
 
-def Run(command, parameters=None, wait=False):
-    
-    if(globalParameter['PathJarvis'] == None):
-        return
-
-    if(parameters != None):
-    	proc = subprocess.Popen([command, parameters], stdout=subprocess.PIPE, shell=None)
-    else:
-    	proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=None)
-
-    if(wait == True):
-        proc.communicate()
-
-def RunJarvis(tags):
-	Run(globalParameter['PathExecutable'] + ' ' + globalParameter['PathJarvis'] + ' ' + tags, None, True)  
-
 def Main():
     """interface chat bot aiml (/bot) | Optional parameters: -p (--port) to select target port"""
 
@@ -318,7 +305,6 @@ if __name__ == '__main__':
     parser.add_argument('-d','--description', help='Description of program', action='store_true')
     parser.add_argument('-u','--tests', help='Execute tests', action='store_true')
     parser.add_argument('-t','--train', help='Active autotrain', action='store_true')
-    parser.add_argument('-l','--bootloop', help='Chatbot in loop', action='store_true')
     parser.add_argument('-r','--bootresponse', help='Chatbot response input', action='store_true')
     parser.add_argument('-p','--port', help='Service running in target port')
     parser.add_argument('-a','--address', help='Service running in target address')    
@@ -344,10 +330,6 @@ if __name__ == '__main__':
 
     if args['train'] == True:       
         train = True 
-
-    if args['bootloop'] == True:       
-        ChatBotLoop(train)
-        sys.exit()           
 
     if args['bootresponse'] == True:       
         print(BotResponse(dialog))
