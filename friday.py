@@ -4,6 +4,8 @@ import unittest
 import configparser
 from time import sleep
 import subprocess
+import glob
+import random
 
 from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer, ListTrainer
@@ -35,6 +37,7 @@ globalParameter['maximum_similarity_threshold'] = 0.80
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
 
+globalParameter['flaskstatic_folder'] = 'External'
 globalParameter['background'] = 'External/bot/background/1.png'
 globalParameter['img_max_height_mobile'] = '180%'
 globalParameter['img_max_height_web'] = '100%'
@@ -46,7 +49,7 @@ globalParameter['chat_font_height_web'] = 'medium'
 globalParameter['chat_font_height_mobile'] = 'xx-large'
 globalParameter['max_width_web'] = '1200px'
 
-app = Flask(__name__, static_url_path="/External", static_folder='External')
+app = Flask(__name__, static_url_path="/" + globalParameter['flaskstatic_folder'], static_folder=globalParameter['flaskstatic_folder'])
 CORS(app)
 
 class TestCases(unittest.TestCase):
@@ -55,7 +58,7 @@ class TestCases(unittest.TestCase):
         self.assertTrue(check)
 
 def Run(command, parameters=None, wait=False):
-    
+
     if(globalParameter['PathJarvis'] == None):
         return
 
@@ -118,12 +121,19 @@ class MyChatBot():
 
     def response(self, ask):
         target = None
+        flag = None
         if(str(ask).lower().find('[img]') >= 0):
             target = '[img]'
         if(str(ask).lower().find('[file]') >= 0):
             target = '[file]'
         if(str(ask).lower().find('[link]') >= 0):
-            target = '[link]'            
+            target = '[link]'     
+        if(str(ask).lower().find('[json]') >= 0):
+            target = '[json]'  
+            flag = '-n'
+        if(str(ask).lower().find('[jsonlink]') >= 0):
+            target = '[jsonlink]'                                 
+            flag = '-l'
 
         if(target != None and str(ask).lower().find('[base|tags]') >= 0):
             tags = ask.split('[base|tags]')[1]
@@ -131,7 +141,7 @@ class MyChatBot():
             target = target[1:-1].replace(' ','_')
             print(tags)
             print(target)
-            RunJarvis('bookmark -base=services -u ' + str(tags) + " " + target)
+            RunJarvis('bookmark -base=services -u ' + str(tags) + " " + target + " " + flag)
             return 'got it! :P'
 
         if(str(ask).lower().find('[learn]') >= 0 and str(ask).lower().find('[answer]') >= 0):
@@ -203,6 +213,7 @@ def makePageBot():
 
     PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
     PAGE_SPRIPT += '''<script>var img_agent_reaction = [];var dict_img_agent_reaction_lenghts = []; var list_reaction_translations = []; var time_out_reaction;var time_out_reaction_delay = 20000;$(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );var img_agent = document.getElementById("agent");var chat = document.getElementById("input-chat");'''
+
     PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal_2.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal_3.png"]);'
@@ -234,6 +245,18 @@ def makePageBot():
 
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
+
+def OrganizeParameters():
+    
+    backgrounds = []
+    for _background in glob.glob(globalParameter['PathBackgroud'] + "\\*.png"):
+        backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
+    globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
+
+    #'External/bot/background/1.png'
+    print(globalParameter['background'])
+
+    pass
 
 def LoadParameters():
     global globalParameter
@@ -267,6 +290,7 @@ def LoadParameters():
             if('BotImgReaction' in sections):                    
                 for key in config['BotImgReaction']:
                     #reaction_xxx = image  
+                    #preference for loading image reactions
                     globalParameter['BotImgReaction'].append([str(key).split("_")[0], str(config['BotImgReaction'][key])])
                     print([str(key).split("_")[0], str(config['BotImgReaction'][key])])
                     pass  
@@ -277,6 +301,8 @@ def LoadParameters():
                     print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
                     pass                          
                 
+    OrganizeParameters()
+
     jarvis_file = globalParameter['PathJarvis']
     if(os.path.isfile(jarvis_file) == False):
         globalParameter['PathJarvis'] = None
@@ -289,6 +315,7 @@ def Main():
     global globalParameter
 
     LoadParameters()
+    #globalParameter['MAINWEBSERVER'] = False
 
     try:
         if(globalParameter['MAINWEBSERVER'] == True):
