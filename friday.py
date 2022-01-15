@@ -6,6 +6,7 @@ from time import sleep
 import subprocess
 import glob
 import random
+from pathlib import Path
 
 from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer, ListTrainer
@@ -25,8 +26,8 @@ globalParameter['Path'] = None
 globalParameter['PathBackgroud'] = None
 globalParameter['PathAgentReaction'] = None
 
-globalParameter['InternalPathBackgroud'] = "bot/background/"
-globalParameter['InternalPathAgentReaction'] = "bot/agent/"
+#globalParameter['InternalPathBackgroud'] = "bot/background/"
+#globalParameter['InternalPathAgentReaction'] = "bot/agent/"
 
 globalParameter['LocalPort'] = 8821
 globalParameter['LocalIp'] = "0.0.0.0"
@@ -36,6 +37,8 @@ globalParameter['maximum_similarity_threshold'] = 0.80
 
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
+globalParameter['CommonStatus'] = 'normal'
+
 
 globalParameter['flaskstatic_folder'] = 'External'
 globalParameter['background'] = 'External/bot/background/1.png'
@@ -214,6 +217,10 @@ def makePageBot():
     PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
     PAGE_SPRIPT += '''<script>var img_agent_reaction = [];var dict_img_agent_reaction_lenghts = []; var list_reaction_translations = []; var time_out_reaction;var time_out_reaction_delay = 20000;$(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );var img_agent = document.getElementById("agent");var chat = document.getElementById("input-chat");'''
 
+    for list_img_reaction in globalParameter['BotImgReaction']:
+        PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
+
+    '''
     PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal_2.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal_3.png"]);'
@@ -226,6 +233,7 @@ def makePageBot():
     PAGE_SPRIPT += 'img_agent_reaction.push(["sad","External/bot/agent/sad_2.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["surprised","External/bot/agent/surprised.png"]);'
     PAGE_SPRIPT += 'img_agent_reaction.push(["surprised","External/bot/agent/surprised_2.png"]);'
+    '''
 
     for list_reaction_translations in globalParameter['BotReactionTranslations']:
         PAGE_SPRIPT += 'list_reaction_translations.push(["' + list_reaction_translations[1] + '","' + list_reaction_translations[0] + '"]);'    
@@ -234,7 +242,7 @@ def makePageBot():
     PAGE_SPRIPT += '''\nfunction GetWindowsCenter(target){return Math.max(0, (($(window).width() - $(target).outerWidth()) / 2) + $(window).scrollLeft());}'''
     PAGE_SPRIPT += '''\nfunction SetImageReaction(feeling){console.log(feeling);clearTimeout(time_out_reaction);var img_agent = document.getElementById("agent");img_agent.src = GetImageReaction(feeling); time_out_reaction = setTimeout(function(){ SetImageReaction("normal"); }, time_out_reaction_delay);  img_agent.style.marginLeft = (GetWindowsCenter(img_agent)*(GetNewPosition()/100)).toString() + "px";if(img_agent.classList.contains("effect1") == false){img_agent.classList.remove("effect2");img_agent.classList.add("effect1");}else{img_agent.classList.remove("effect1");img_agent.classList.add("effect2");}}'''
     PAGE_SPRIPT += '''\nfunction GetImageReaction(feeling){var max = dict_img_agent_reaction_lenghts[feeling];var number = MakeRand(0,max-1);var result = img_agent_reaction[0][1];var count = 0;for (id in img_agent_reaction) {if(img_agent_reaction[id][0] == feeling){if(count == number){result = img_agent_reaction[id][1];break;}count = count + 1;}}return result;}'''
-    PAGE_SPRIPT += '''\nfunction GetReactionTranslations(text){var result = "normal";for (id in list_reaction_translations) {if(text.toString().indexOf(list_reaction_translations[id][0]) != -1){result = list_reaction_translations[id][1];break;}}return result;}'''
+    PAGE_SPRIPT += '''\nfunction GetReactionTranslations(text){var result = "''' + globalParameter['CommonStatus'] +'''";for (id in list_reaction_translations) {if(text.toString().indexOf(list_reaction_translations[id][0]) != -1){result = list_reaction_translations[id][1];break;}}return result;}'''
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
@@ -252,11 +260,13 @@ def OrganizeParameters():
     for _background in glob.glob(globalParameter['PathBackgroud'] + "\\*.png"):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
+    #print(globalParameter['background'])
 
-    #'External/bot/background/1.png'
-    print(globalParameter['background'])
 
-    pass
+    for _imgReaction in glob.glob(globalParameter['PathAgentReaction'] + "\\*.png"):
+        filename = Path(_imgReaction).stem
+        globalParameter['BotImgReaction'].append([str(filename).split("_")[0], str(globalParameter['flaskstatic_folder'] + _imgReaction.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//'))])
+    #print(globalParameter['BotImgReaction'])
 
 def LoadParameters():
     global globalParameter
