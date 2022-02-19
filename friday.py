@@ -197,12 +197,14 @@ def makePageBot():
     elif globalParameter['BotIp'].find("http") < 0:
         globalParameter['BotIp'] =  "http://" +  globalParameter['BotIp'] + "/"
         pass
-
     botresponse = globalParameter['BotIp'] + "botresponse" 
+
+    Randbackground()
 
     ext_bootstrap_css = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css'
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
+    ext_font_awesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
     background = globalParameter['background']
     img_max_height_mobile = globalParameter['img_max_height_mobile']
     img_max_height_web = globalParameter['img_max_height_web']
@@ -222,11 +224,28 @@ def makePageBot():
     PAGE_STYLE += '@media screen and (min-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_web + '; max-height: ' + img_max_height_web + ';}  #input-chat, #buttonchat {line-height: ' + chat_height_web + ';font-size: ' + chat_font_height_web + ';} } '
     PAGE_STYLE += '.effect1 {animation-name:img-ani1;animation-duration: 2s; animation-timing-function: ease-in;}.effect2 {animation-name:img-ani2;animation-duration: 2s; animation-timing-function: ease-in;}@keyframes img-ani1 {from{opacity:0;}to{opacity: 1;}}@keyframes img-ani2 {from{opacity:0;}to{opacity: 1;}} '
     PAGE_STYLE += '.chat {z-index: 1500;display: block;margin: 20px auto;max-width: 90%;} '
+    PAGE_STYLE += '.maxup {z-index: 3000}'
     PAGE_STYLE += '</style>'
     PAGE_STYLE += '<link href="' + ext_bootstrap_css + '" rel="stylesheet" crossorigin="anonymous"><script src="' + ext_jquery_js + '"></script>'
+    PAGE_STYLE += '<link rel="stylesheet" href="' + ext_font_awesome + '">'
     PAGE_HEAD = PAGE_HEAD + PAGE_STYLE + '</head>'
 
-    PAGE_BODY = '<body><div id="responsive-imgs" class="responsive-imgs-resp"><img id="agent" class="fixed-bottom"></div><div class="chat fixed-bottom"><div class="input-group input-space"><input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2"><div class="input-group-append"><span class="input-group-text" id="basic-addon2"><a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a></span></div></div></div></body>'
+    PAGE_BODY = '<body>'
+
+    PAGE_BODY += '<div class="dropdown maxup">'
+    PAGE_BODY += '<button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">'
+    PAGE_BODY += '<i class="fa fa-bars"></i>'
+    PAGE_BODY += '</button>'
+    PAGE_BODY += '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'
+    PAGE_BODY += '<a class="dropdown-item" href="https://www.google.com/" target="_blank">Google</a>'
+    PAGE_BODY += '<a class="dropdown-item" href="#">Another action</a>'
+    PAGE_BODY += '<a class="dropdown-item" href="#">Something else here</a>'    
+    PAGE_BODY += '</div>'
+    PAGE_BODY += '</div>'
+
+
+    PAGE_BODY += '<div id="responsive-imgs" class="responsive-imgs-resp"><img id="agent" class="fixed-bottom"></div><div class="chat fixed-bottom"><div class="input-group input-space"><input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2"><div class="input-group-append"><span class="input-group-text" id="basic-addon2"><a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a></span></div></div></div>'
+    PAGE_BODY += '</body>'
 
     PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
     PAGE_SPRIPT += '''<script>var img_agent_reaction = [];var dict_img_agent_reaction_lenghts = []; var list_reaction_translations = []; var time_out_reaction;var time_out_reaction_delay = 20000;$(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );var img_agent = document.getElementById("agent");var chat = document.getElementById("input-chat");'''
@@ -253,39 +272,14 @@ def makePageBot():
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
 
-def ChatBotRemote(message):
-    error = 'Hi! Sorry... No service now =('
-    result = error
-    try:
-        request = requests.get('http://' + globalParameter['BotIp'])
-        if request.status_code == 200:
-            localTime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")
-            data = {'ask' : message , 'user' : globalParameter['LocalUsername'] , 'host' : globalParameter['LocalHostname'] , 'command' : globalParameter['LastCommand'] , 'time' : localTime , 'status' : 'start'}
+def Randbackground():
+    backgrounds = []
+    for _background in glob.glob(globalParameter['PathBackgroud'] + "\\*.png"):
+        backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
+    globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
+    #print(globalParameter['background'])
 
-            url = "http://" + globalParameter['BotIp'] + "/botresponse"
-            headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-            r = requests.post(url, data=json.dumps(data), headers=headers)
-            result = r.text
-        else:
-            result = error
-    except:
-        result = error
-        pass
-
-    return result
-
-def ReviewBotIp():
-    print(globalParameter['BotIp'])
-
-    if(globalParameter['BotIp'] == None):
-        return
-
-    
-
-
-
-def OrganizeParameters():
-    
+def OrganizeParameters():    
     backgrounds = []
     for _background in glob.glob(globalParameter['PathBackgroud'] + "\\*.png"):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
