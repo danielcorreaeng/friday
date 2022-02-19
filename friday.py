@@ -6,6 +6,9 @@ from time import sleep
 import subprocess
 import glob
 import random
+import requests
+import datetime
+import json
 from pathlib import Path
 
 from chatterbot import ChatBot
@@ -34,6 +37,7 @@ globalParameter['LocalIp'] = "0.0.0.0"
 globalParameter['MAINWEBSERVER'] = True
 globalParameter['PathDB'] = "db.sqlite3"
 globalParameter['maximum_similarity_threshold'] = 0.80
+globalParameter['BotIp'] = None
 
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
@@ -186,6 +190,16 @@ def ReloadParameters():
 
 @app.route('/bot')
 def makePageBot():
+    global globalParameter
+
+    if(globalParameter['BotIp'] == None):
+        globalParameter['BotIp'] = str(request.url_root)
+    elif globalParameter['BotIp'].find("http") < 0:
+        globalParameter['BotIp'] =  "http://" +  globalParameter['BotIp'] + "/"
+        pass
+
+    botresponse = globalParameter['BotIp'] + "botresponse" 
+
     ext_bootstrap_css = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css'
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
@@ -220,21 +234,6 @@ def makePageBot():
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
 
-    '''
-    PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal_2.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["normal","External/bot/agent/normal_3.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["happy","External/bot/agent/happy.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["happy","External/bot/agent/happy_2.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["happy","External/bot/agent/happy_3.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["angry","External/bot/agent/angry.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["angry","External/bot/agent/angry_2.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["sad","External/bot/agent/sad.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["sad","External/bot/agent/sad_2.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["surprised","External/bot/agent/surprised.png"]);'
-    PAGE_SPRIPT += 'img_agent_reaction.push(["surprised","External/bot/agent/surprised_2.png"]);'
-    '''
-
     for list_reaction_translations in globalParameter['BotReactionTranslations']:
         PAGE_SPRIPT += 'list_reaction_translations.push(["' + list_reaction_translations[1] + '","' + list_reaction_translations[0] + '"]);'    
 
@@ -246,13 +245,44 @@ def makePageBot():
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
-    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", "''' + str(request.base_url) + '''response''' + '''", true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", "''' + str(request.base_url) + '''");xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();}};xhr.send(data);}'''
+    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", "''' + botresponse + '''", true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", "''' + str(request.base_url) + '''");xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();}};xhr.send(data);}'''
 
     PAGE_SPRIPT += '''</script>'''
     PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
 
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
+
+def ChatBotRemote(message):
+    error = 'Hi! Sorry... No service now =('
+    result = error
+    try:
+        request = requests.get('http://' + globalParameter['BotIp'])
+        if request.status_code == 200:
+            localTime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")
+            data = {'ask' : message , 'user' : globalParameter['LocalUsername'] , 'host' : globalParameter['LocalHostname'] , 'command' : globalParameter['LastCommand'] , 'time' : localTime , 'status' : 'start'}
+
+            url = "http://" + globalParameter['BotIp'] + "/botresponse"
+            headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+            r = requests.post(url, data=json.dumps(data), headers=headers)
+            result = r.text
+        else:
+            result = error
+    except:
+        result = error
+        pass
+
+    return result
+
+def ReviewBotIp():
+    print(globalParameter['BotIp'])
+
+    if(globalParameter['BotIp'] == None):
+        return
+
+    
+
+
 
 def OrganizeParameters():
     
