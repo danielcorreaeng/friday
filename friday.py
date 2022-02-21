@@ -43,6 +43,7 @@ globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
 globalParameter['CommonStatus'] = 'normal'
 
+globalParameter['MenuLinks'] = []
 
 globalParameter['flaskstatic_folder'] = 'External'
 globalParameter['background'] = 'External/bot/background/1.png'
@@ -237,12 +238,12 @@ def makePageBot():
     PAGE_BODY += '<i class="fa fa-bars"></i>'
     PAGE_BODY += '</button>'
     PAGE_BODY += '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'
-    PAGE_BODY += '<a class="dropdown-item" href="https://www.google.com/" target="_blank">Google</a>'
-    PAGE_BODY += '<a class="dropdown-item" href="#">Another action</a>'
-    PAGE_BODY += '<a class="dropdown-item" href="#">Something else here</a>'    
-    PAGE_BODY += '</div>'
-    PAGE_BODY += '</div>'
 
+    for list_links in globalParameter['MenuLinks']:
+        PAGE_BODY += '<a class="dropdown-item" href="' + list_links[1] + '" target="_blank">' + list_links[0] + '</a>'  
+
+    PAGE_BODY += '</div>'
+    PAGE_BODY += '</div>'
 
     PAGE_BODY += '<div id="responsive-imgs" class="responsive-imgs-resp"><img id="agent" class="fixed-bottom"></div><div class="chat fixed-bottom"><div class="input-group input-space"><input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2"><div class="input-group-append"><span class="input-group-text" id="basic-addon2"><a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a></span></div></div></div>'
     PAGE_BODY += '</body>'
@@ -333,7 +334,14 @@ def LoadParameters():
                     #reaction_xxx = expression  
                     globalParameter['BotReactionTranslations'].append([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
                     print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
-                    pass                          
+                    pass       
+
+            if('MenuLinks' in sections):                    
+                for key in config['MenuLinks']:
+                    #meu link = https:\\www.meulink.com.br
+                    globalParameter['MenuLinks'].append([str(key).split("_")[0], str(config['MenuLinks'][key])])
+                    print([str(key), str(config['MenuLinks'][key])])
+                    pass                                      
                 
     OrganizeParameters()
 
