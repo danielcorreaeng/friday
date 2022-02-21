@@ -23,6 +23,7 @@ globalParameter = {}
 #Enable command jarvis
 globalParameter['PathJarvis'] = "C:\\Jarvis\\Jarvis.py"
 globalParameter['PathExecutable'] = "python"
+globalParameter['BotCommandJarvis'] = "[Jarvis]"
 
 #Loading in GetCorrectPath()
 globalParameter['Path'] = None
@@ -173,12 +174,25 @@ def BotResponse(ask):
 def botresponse():
     if request.method == 'POST':
         data = request.get_json(force=True)  
-        #ask = str(data[0])
         #print(ask)
         return BotResponse(data['ask'])
     else:
         ask = request.args.get('ask')
         return BotResponse(ask)
+
+
+@app.route('/botresponsecommand',methods = ['POST', 'GET'])
+def botresponsecommand():
+    if request.method == 'POST':
+        data = request.get_json(force=True)  
+        print(data['ask'])
+
+        if(globalParameter['PathJarvis'] == None):
+            return 'Command not implemented'
+
+        RunJarvis(str(data['ask']).replace(globalParameter['BotCommandJarvis'], ""))
+
+        return 'Command accepted!'
 
 @app.route('/')
 def index():
@@ -199,6 +213,7 @@ def makePageBot():
         globalParameter['BotIp'] =  "http://" +  globalParameter['BotIp'] + "/"
         pass
     botresponse = globalParameter['BotIp'] + "botresponse" 
+    botresponsecommand = str(request.url_root) + "/botresponsecommand"
 
     Randbackground()
 
@@ -265,7 +280,7 @@ def makePageBot():
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
-    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", "''' + botresponse + '''", true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", "''' + str(request.base_url) + '''");xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();}};xhr.send(data);}'''
+    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); var link = "''' + botresponse + '''"; if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) { link = "''' + botresponsecommand + '''";}; var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", link, true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", link);xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();}};xhr.send(data);}'''
 
     PAGE_SPRIPT += '''</script>'''
     PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
