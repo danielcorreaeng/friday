@@ -24,6 +24,7 @@ globalParameter = {}
 globalParameter['PathJarvis'] = "C:\\Jarvis\\Jarvis.py"
 globalParameter['PathExecutable'] = "python"
 globalParameter['BotCommandJarvis'] = "[Jarvis]"
+globalParameter['allowedexternalrecordbase'] = ""
 
 #Loading in GetCorrectPath()
 globalParameter['Path'] = None
@@ -45,6 +46,7 @@ globalParameter['BotReactionTranslations'] = []
 globalParameter['CommonStatus'] = 'normal'
 
 globalParameter['MenuLinks'] = []
+globalParameter['MenuCommands'] = []
 
 globalParameter['flaskstatic_folder'] = 'External'
 globalParameter['background'] = 'External/bot/background/1.png'
@@ -131,6 +133,7 @@ class MyChatBot():
     def response(self, ask):
         target = None
         flag = None
+
         if(str(ask).lower().find('[img]') >= 0):
             target = '[img]'
         if(str(ask).lower().find('[file]') >= 0):
@@ -148,10 +151,18 @@ class MyChatBot():
             tags = ask.split('[base|tags]')[1]
             target = ask.split('[base|tags]')[0].replace(target,'')
             target = target[1:-1].replace(' ','_')
-            print(tags)
-            print(target)
-            RunJarvis('bookmark -base=services -u ' + str(tags) + " " + target + " " + flag)
-            return 'got it! :P'
+            #print(tags)
+            #print(target)
+            cmd = 'bookmark -base=services -u ' + str(globalParameter['allowedexternalrecordbase']) + str(tags) + " " + str(flag) + " " + str(target)
+            print(cmd)
+            RunJarvis(cmd)
+
+            result = 'got it! :P'
+
+            if(str(globalParameter['allowedexternalrecordbase']) != ""):
+                result = result + " (recorded in base " + str(globalParameter['allowedexternalrecordbase']) + ")"
+
+            return result
 
         if(str(ask).lower().find('[learn]') >= 0 and str(ask).lower().find('[answer]') >= 0):
             answer = ask.split('[answer]')[1]
@@ -249,15 +260,31 @@ def makePageBot():
     PAGE_BODY = '<body>'
 
     PAGE_BODY += '<div class="dropdown maxup">'
+
+    #links
     PAGE_BODY += '<button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">'
     PAGE_BODY += '<i class="fa fa-bars"></i>'
+    #PAGE_BODY += '<i class="fa fa-external-link" aria-hidden="true"></i>'
     PAGE_BODY += '</button>'
     PAGE_BODY += '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'
-
     for list_links in globalParameter['MenuLinks']:
         PAGE_BODY += '<a class="dropdown-item" href="' + list_links[1] + '" target="_blank">' + list_links[0] + '</a>'  
-
     PAGE_BODY += '</div>'
+
+    #command
+    if(globalParameter['PathJarvis'] != None):
+        PAGE_BODY += '<button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">'
+        PAGE_BODY += '<i class="fa fa-terminal" aria-hidden="true"></i>'
+        PAGE_BODY += '</button>'
+        PAGE_BODY += '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'
+
+        PAGE_BODY += """<a class="dropdown-item" onclick="SendMessageInputChat('[img] link_image [base|tags] db tags')" href="#">Example send image for db</a>"""
+        PAGE_BODY += """<a class="dropdown-item" onclick="SendMessageInputChat('[jsonlink] link [base|tags] db tags')" href="#">Example send link json for db</a>"""
+        PAGE_BODY += '<div class="dropdown-divider"></div>'
+        for list_links in globalParameter['MenuCommands']:
+            PAGE_BODY += """<a class="dropdown-item" onclick="SendMessageInputChat('"""+ globalParameter['BotCommandJarvis'] + """ """ + list_links[1] + """')" href="#">""" + list_links[0] + """</a>"""
+        PAGE_BODY += '</div>'
+    
     PAGE_BODY += '</div>'
 
     PAGE_BODY += '<div id="responsive-imgs" class="responsive-imgs-resp"><img id="agent" class="fixed-bottom"></div><div class="chat fixed-bottom"><div class="input-group input-space"><input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2"><div class="input-group-append"><span class="input-group-text" id="basic-addon2"><a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a></span></div></div></div>'
@@ -280,10 +307,12 @@ def makePageBot():
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
-    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); var link = "''' + botresponse + '''"; if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) { link = "''' + botresponsecommand + '''";}; var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", link, true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", link);xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();}};xhr.send(data);}'''
+    PAGE_SPRIPT += '''\nfunction SendMessageInputChat(text) {document.getElementById("input-chat").value=text}'''
+    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); var link = "''' + botresponse + '''"; if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) { link = "''' + botresponsecommand + '''";}; var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", link, true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", link);xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();chat.select();}};xhr.send(data);}'''
 
     PAGE_SPRIPT += '''</script>'''
-    PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
+    #PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
+    PAGE_SPRIPT += '''<script>var chat = document.getElementById("input-chat");chat.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();}; });</script>'''
 
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
@@ -351,13 +380,28 @@ def LoadParameters():
                     print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
                     pass       
 
-            if('MenuLinks' in sections):                    
+            if('MenuLinks' in sections):            
+                globalParameter['MenuLinks'].clear()      
                 for key in config['MenuLinks']:
-                    #meu link = https:\\www.meulink.com.br
-                    globalParameter['MenuLinks'].append([str(key).split("_")[0], str(config['MenuLinks'][key])])
-                    print([str(key), str(config['MenuLinks'][key])])
-                    pass                                      
-                
+                    try:
+                        #my link = https:\\www.meulink.com.br
+                        globalParameter['MenuLinks'].append([str(key), str(config['MenuLinks'][key])])
+                        print([str(key), str(config['MenuLinks'][key])])
+                        pass
+                    except:
+                        pass                                      
+ 
+            if('MenuCommands' in sections):            
+                globalParameter['MenuCommands'].clear()      
+                for key in config['MenuCommands']:
+                    #try:
+                    #my command = calc
+                    globalParameter['MenuCommands'].append([str(key), str(config['MenuCommands'][key])])
+                    print([str(key), str(config['MenuCommands'][key])])
+                    pass
+                    #except:
+                    #    pass  
+                                                       
     OrganizeParameters()
 
     jarvis_file = globalParameter['PathJarvis']
