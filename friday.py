@@ -21,7 +21,7 @@ from flask_cors import CORS
 globalParameter = {}
 
 #Enable command jarvis
-globalParameter['PathJarvis'] = "C:\\Jarvis\\Jarvis.py"
+globalParameter['PathJarvis'] = os.path.join("C:\\", "Jarvis", "Jarvis.py")
 globalParameter['PathExecutable'] = "python"
 globalParameter['BotCommandJarvis'] = "[Jarvis]"
 globalParameter['allowedexternalrecordbase'] = ""
@@ -319,20 +319,20 @@ def makePageBot():
 
 def Randbackground():
     backgrounds = []
-    for _background in glob.glob(globalParameter['PathBackgroud'] + "\\*.png"):
+    for _background in glob.glob(os.path.join(globalParameter['PathBackgroud'], "*.png")):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
 
 def OrganizeParameters():    
     backgrounds = []
-    for _background in glob.glob(globalParameter['PathBackgroud'] + "\\*.png"):
+    for _background in glob.glob(os.path.join(globalParameter['PathBackgroud'], "*.png")):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
 
 
-    for _imgReaction in glob.glob(globalParameter['PathAgentReaction'] + "\\*.png"):
+    for _imgReaction in glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.png")):
         filename = Path(_imgReaction).stem
         globalParameter['BotImgReaction'].append([str(filename).split("_")[0], str(globalParameter['flaskstatic_folder'] + _imgReaction.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//'))])
     #print(globalParameter['BotImgReaction'])
@@ -346,14 +346,14 @@ def LoadParameters():
     os.chdir(dir_path)
 
     globalParameter['Path'] = dir_path
-    globalParameter['PathBackgroud'] = globalParameter['Path'] + '\\External\\bot\\background'
-    globalParameter['PathAgentReaction'] = globalParameter['Path'] + '\\External\\bot\\agent'   
+    globalParameter['PathBackgroud'] = os.path.join(globalParameter['Path'],'External','bot','background')
+    globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot','agent')
 
     print(globalParameter['Path']) 
     print(globalParameter['PathBackgroud']) 
     print(globalParameter['PathAgentReaction']) 
 
-    ini_file = dir_path + '\\config.ini'
+    ini_file = os.path.join(dir_path, 'config.ini')
     if(os.path.isfile(ini_file) == True):
         with open(ini_file) as fp:
             config = configparser.ConfigParser()
@@ -427,7 +427,7 @@ def Main():
         print('error webservice')
     
 if __name__ == '__main__':   
-    #os.chdir(os.path.dirname('C:\\Jarvis\\Output\\'))   
+    os.chdir(os.path.dirname(__file__))   
 
     parser = argparse.ArgumentParser(description=Main.__doc__)
     parser.add_argument('-d','--description', help='Description of program', action='store_true')
