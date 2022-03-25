@@ -74,9 +74,9 @@ def Run(command, parameters=None, wait=False):
         return
 
     if(parameters != None):
-        proc = subprocess.Popen([command, parameters], stdout=subprocess.PIPE, shell=None)
+        proc = subprocess.Popen([command, parameters], stdout=subprocess.PIPE, shell=True)
     else:
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=None)
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
 
     if(wait == True):
         proc.communicate()
@@ -224,7 +224,7 @@ def makePageBot():
         globalParameter['BotIp'] =  "http://" +  globalParameter['BotIp'] + "/"
         pass
     botresponse = globalParameter['BotIp'] + "botresponse" 
-    botresponsecommand = str(request.url_root) + "/botresponsecommand"
+    botresponsecommand = str(request.url_root) + "botresponsecommand"
 
     Randbackground()
 
