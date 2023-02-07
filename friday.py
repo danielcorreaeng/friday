@@ -9,8 +9,10 @@ globalParameter['BotCommandJarvis'] = "[Jarvis]"
 
 #Loading in GetCorrectPath()
 globalParameter['Path'] = None
-globalParameter['PathBackgroud'] = None
+globalParameter['PathBackground'] = None
 globalParameter['PathAgentReaction'] = None
+globalParameter['CurrentAgent'] = "agent-100"
+globalParameter['CurrentBackground'] = "background-000"
 
 globalParameter['LocalPort'] = 8821
 globalParameter['LocalIp'] = "0.0.0.0"
@@ -43,7 +45,7 @@ def description2():
 
 @app.route('/reload')
 def ReloadParameters():
-    LoadParameters()
+    LoadVarsIni2()
     return 'ok'
 
 @app.route('/bot')
@@ -192,7 +194,7 @@ def botresponsecommand():
 
 def Randbackground():
     backgrounds = []
-    for _background in glob.glob(os.path.join(globalParameter['PathBackgroud'], "*.png")):
+    for _background in glob.glob(os.path.join(globalParameter['PathBackground'], "*.png")):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
@@ -200,9 +202,9 @@ def Randbackground():
 def OrganizeParameters():    
     backgrounds = []
 
-    print(globalParameter['PathBackgroud'])
+    print(globalParameter['PathBackground'])
 
-    for _background in glob.glob(os.path.join(globalParameter['PathBackgroud'], "*.png")):
+    for _background in glob.glob(os.path.join(globalParameter['PathBackground'], "*.png")):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
@@ -220,8 +222,8 @@ def LoadVarsIni2(config,sections):
     os.chdir(dir_path)    
 
     globalParameter['Path'] = dir_path
-    globalParameter['PathBackgroud'] = os.path.join(globalParameter['Path'],'External','bot','background-000')
-    globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot','agent-000')
+    globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
+    globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
 
     if('BotImgReaction' in sections):                    
         for key in config['BotImgReaction']:
