@@ -28,7 +28,7 @@ globalParameter['configFile'] = "config.ini"
 globalParameter['allowedexternalrecordbase'] = ""
 globalParameter['flaskstatic_folder'] = 'External'
 
-#chatbot jarvis updated Feb 4th, 2023 - https://github.com/danielcorreaeng/jarvis
+#chatbot jarvis updated Feb 17th, 2023 - https://github.com/danielcorreaeng/jarvis
 
 app = Flask(__name__, static_url_path="/" + globalParameter['flaskstatic_folder'], static_folder=globalParameter['flaskstatic_folder'])
 CORS(app)
@@ -273,7 +273,8 @@ if __name__ == '__main__':
     parser.add_argument('-l','--bootloop', help='Chatbot in loop', action='store_true')
     parser.add_argument('-r','--bootresponse', help='Chatbot response input', action='store_true')
     parser.add_argument('-p','--port', help='Service running in target port')
-    parser.add_argument('-c','--config', help='Config.ini file')    
+    parser.add_argument('-c','--config', help='Config.ini file')
+    parser.add_argument('-i','--ip', help='Service running in target ip') 
     
     
     args, unknown = parser.parse_known_args()
@@ -309,6 +310,10 @@ if __name__ == '__main__':
         print('TargetPort: ' + args['port'])
         globalParameter['LocalPort'] = args['port']             
 
+    if args['ip'] is not None:
+        print('TargetIP: ' + args['ip'])
+        globalParameter['LocalIp'] = args['ip']   
+        
     if args['config'] is not None:
         print('Config.ini: ' + args['config'])
         globalParameter['configFile'] = args['config']  

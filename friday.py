@@ -274,7 +274,7 @@ def MainLocal():
     OrganizeParameters()
 
     jarvis_file = globalParameter['PathJarvis']
-    if(os.path.isfile(jarvis_file) == False):
+    if(globalParameter['PathJarvis']!= None and os.path.isfile(jarvis_file) == False):
         globalParameter['PathJarvis'] = None
     else:
         print("Jarvis command enabled")
