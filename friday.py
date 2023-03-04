@@ -3,6 +3,7 @@ import globalsub
 import glob
 from pathlib import Path
 from chatbot import *
+import json
    
 #Enable command jarvis
 globalParameter['BotCommandJarvis'] = "[Jarvis]"
@@ -23,6 +24,7 @@ globalParameter['BotIp'] = None
 
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
+globalParameter['BotReactionPoints'] = []
 globalParameter['CommonStatus'] = 'normal'
 
 globalParameter['MenuLinks'] = []
@@ -59,6 +61,7 @@ def makePageBot():
         pass
     botresponse = globalParameter['BotIp'] + "botresponse" 
     botresponsecommand = str(request.url_root) + "/botresponsecommand"
+    botreactionpoints = str(request.url_root) + "/botreactionpoints" 
 
     Randbackground()
 
@@ -66,6 +69,9 @@ def makePageBot():
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
     ext_font_awesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
+    ext_chart_js = 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js'
+    ext_feather_js = 'https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js'
+
     background = globalParameter['background']
     img_max_height_mobile = globalParameter['img_max_height_mobile']
     img_max_height_web = globalParameter['img_max_height_web']
@@ -122,12 +128,11 @@ def makePageBot():
     #points
     PAGE_BODY += '''
         <div style="margin-left: 80%; margin-right: 5%; position: relative; overflow-y: auto; max-height:70%;"> 
-            <div style="height: 100px; background-color: rgba(255, 255, 255, 0.4);" id="score"> 
-                score
-            </div>
+            <div style="height: 30%" id="score"> 
+                <canvas id="myChart" style="height: 100%; background-color: rgba(255, 255, 255, 0.7);"></canvas>
+            </div>  
             &nbsp;
         </div>
-    
     '''
     
     PAGE_BODY += '</div>'
@@ -138,7 +143,7 @@ def makePageBot():
         </div>
         <div class="chat fixed-bottom">
             <div id="responsechat" style="background-color: rgba(255, 255, 255, 0.4);margin: 10px auto;"> 
-                response
+                 
             </div>
             <div class="input-group input-space">
                 <input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2">
@@ -153,7 +158,78 @@ def makePageBot():
     PAGE_BODY += '</body>'
 
     PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
-    PAGE_SPRIPT += '''<script>var img_agent_reaction = [];var dict_img_agent_reaction_lenghts = []; var list_reaction_translations = []; var time_out_reaction;var time_out_reaction_delay = 20000;$(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );var img_agent = document.getElementById("agent");var chat = document.getElementById("input-chat");'''
+    PAGE_SPRIPT += '<script src="' + ext_chart_js + '" crossorigin="anonymous"></script>'
+    PAGE_SPRIPT += '<script src="' + ext_feather_js + '" crossorigin="anonymous"></script>'
+
+    ReactionPoints_LABELS = ""
+    ReactionPoints_VALUES = ""
+
+    for i in range(0,len(globalParameter['BotReactionPoints'])):
+        if globalParameter['BotReactionPoints'][i][0] == globalParameter['CommonStatus']:
+            continue
+
+        ReactionPoints_LABELS = ReactionPoints_LABELS + "'" + str(globalParameter['BotReactionPoints'][i][0]) + "',"
+        ReactionPoints_VALUES = ReactionPoints_VALUES + str(globalParameter['BotReactionPoints'][i][1]) + ","
+
+    PAGE_SPRIPT += '''<script>
+    (function () 
+        {  
+            feather.replace({ 'aria-hidden': 'true' });  
+            var ctx = document.getElementById('myChart');  
+            var myChart = new Chart(ctx, 
+                {
+                    type: 'radar',
+                    data: {
+                    labels: [  ''' + ReactionPoints_LABELS + '''],
+                    datasets: [
+                        {  
+                            data: [''' + ReactionPoints_VALUES + '''  ],  
+                            label: 'Score',
+                            fill: true,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgb(54, 162, 235)',
+                            pointBackgroundColor: 'rgb(54, 162, 235)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(54, 162, 235)'
+                        }]},
+                    options: {
+                            elements: { line: { borderWidth: 2 } },
+                            legend: {  display: false},
+                            scale: {
+                                    angleLines: {
+                                        display: false
+                                    },
+                                    gridLines: {
+                                        display: true
+                                    },
+                                    pointLabels: {
+                                        display: true
+                                    },
+                                    ticks: {
+                                        display: false
+                                    },
+                            }
+                        } 
+                            
+                     });
+        })();
+    </script>'''
+
+    PAGE_SPRIPT += '''<script>
+        var img_agent_reaction = [];
+        var dict_img_agent_reaction_lenghts = [];
+        var list_reaction_translations = [];
+        var list_reaction_points = [];
+        var time_out_reaction;
+        var time_out_reaction_delay = 20000;
+        
+        $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
+        
+        var img_agent = document.getElementById("agent");
+        var chat = document.getElementById("input-chat");
+    '''
+
 
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
@@ -164,14 +240,94 @@ def makePageBot():
     PAGE_SPRIPT += '''for (id in img_agent_reaction) {if(img_agent_reaction[id][0] in dict_img_agent_reaction_lenghts){var value = dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]];dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]] = value + 1;}else{dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]] = 1;}}img_agent.src = GetImageReaction("normal"); time_out_reaction = setTimeout(function(){ SetImageReaction("normal"); }, time_out_reaction_delay); });'''
     PAGE_SPRIPT += '''\nfunction GetWindowsCenter(target){return Math.max(0, (($(window).width() - $(target).outerWidth()) / 2) + $(window).scrollLeft());}'''
     PAGE_SPRIPT += '''\nfunction SetImageReaction(feeling){console.log(feeling);clearTimeout(time_out_reaction);var img_agent = document.getElementById("agent");img_agent.src = GetImageReaction(feeling); time_out_reaction = setTimeout(function(){ SetImageReaction("normal"); }, time_out_reaction_delay);  img_agent.style.marginLeft = (GetWindowsCenter(img_agent)*(GetNewPosition()/100)).toString() + "px";if(img_agent.classList.contains("effect1") == false){img_agent.classList.remove("effect2");img_agent.classList.add("effect1");}else{img_agent.classList.remove("effect1");img_agent.classList.add("effect2");}}'''
-    PAGE_SPRIPT += '''\nfunction GetImageReaction(feeling){var max = dict_img_agent_reaction_lenghts[feeling];var number = MakeRand(0,max-1);var result = img_agent_reaction[0][1];var count = 0;for (id in img_agent_reaction) {if(img_agent_reaction[id][0] == feeling){if(count == number){result = img_agent_reaction[id][1];break;}count = count + 1;}}return result;}'''
-    PAGE_SPRIPT += '''\nfunction GetReactionTranslations(text){var result = "''' + globalParameter['CommonStatus'] +'''";for (id in list_reaction_translations) {if(text.toString().indexOf(list_reaction_translations[id][0]) != -1){result = list_reaction_translations[id][1];break;}}return result;}'''
+    PAGE_SPRIPT += '''\nfunction GetImageReaction(feeling){
+        var max = dict_img_agent_reaction_lenghts[feeling];
+        var number = MakeRand(0,max-1);
+        var result = img_agent_reaction[0][1];
+        var count = 0;
+        for (id in img_agent_reaction) 
+        {
+            if(img_agent_reaction[id][0] == feeling)
+            {
+                if(count == number)
+                {
+                    result = img_agent_reaction[id][1];
+                    break;
+                }
+                count = count + 1;
+            }
+        }return result;
+    }'''
+    PAGE_SPRIPT += '''\nfunction GetReactionTranslations(text)
+    {
+        var result = "''' + globalParameter['CommonStatus'] +'''";
+        for (id in list_reaction_translations) 
+        {
+            if(text.toString().indexOf(list_reaction_translations[id][0]) != -1)
+            {
+                result = list_reaction_translations[id][1];
+                break;
+            }
+        }
+        return result;
+    }'''
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
     PAGE_SPRIPT += '''\nfunction SendMessageInputChat(text) {document.getElementById("input-chat").value=text}'''
-    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); var link = "''' + botresponse + '''"; if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) { link = "''' + botresponsecommand + '''";}; var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", link, true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", link);xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();chat.select();}};xhr.send(data);}'''
+    PAGE_SPRIPT += '''\n
+        function SendMessageBot(){
+            var img_agent = document.getElementById("agent");  
+            var chat = document.getElementById("input-chat"); 
+            var response_chat = document.getElementById("responsechat");
+            var link = "''' + botresponse + '''"; 
+            if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; 
+            if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) 
+            { link = "''' + botresponsecommand + '''";}; 
+            var xhr = new XMLHttpRequest();
+            var data = '{"ask": "' + chat.value + '"}';
+            xhr.open("POST", link, true);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");
+            xhr.setRequestHeader("Access-Control-Allow-Origin", link);
+            xhr.onreadystatechange = function() { 
+                if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
+                {	
+                    response_chat.innerHTML = xhr.responseText; 
+                    feeling = GetReactionTranslations(xhr.responseText);
+                    SetImageReaction(feeling); 
+                    ReactionPoints(feeling);
+                    chat.focus();
+                    chat.select();
+                }
+            };
+            xhr.send(data);
+        }
+    '''
+    PAGE_SPRIPT += '''\n
+        function ReactionPoints(feeling){
+            var link = "''' + botreactionpoints + '''"; 
+            var xhr = new XMLHttpRequest();
+            var score = document.getElementById("score");  
+            var ctx = document.getElementById('myChart');  
+            
+            var data = '{"feeling": "' + feeling + '"}';
 
+            xhr.open("POST", link, true);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");
+            xhr.setRequestHeader("Access-Control-Allow-Origin", link);
+            xhr.onreadystatechange = function() { 
+                if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
+                {	
+                    var datas = JSON.parse(xhr.response);           
+                }
+            };
+            xhr.send(data);     
+        }
+    '''
     PAGE_SPRIPT += '''</script>'''
     #PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
     PAGE_SPRIPT += '''<script>var chat = document.getElementById("input-chat");chat.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();}; });</script>'''
@@ -192,6 +348,39 @@ def botresponsecommand():
 
         return 'Command accepted!'
 
+@app.route('/botreactionpoints',methods = ['POST', 'GET'])
+def botreactionpoints():
+    global globalParameter
+
+    data_res = {}
+
+    if request.method == 'POST':
+        data = request.get_json(force=True)  
+        feeling = data['feeling']
+
+        for i in range(0,len(globalParameter['BotReactionPoints'])):
+            if globalParameter['BotReactionPoints'][i][0] == globalParameter['CommonStatus']:
+                continue
+
+            if globalParameter['BotReactionPoints'][i][0] == feeling:
+                key = feeling
+                count = globalParameter['BotReactionPoints'][i][1]
+                globalParameter['BotReactionPoints'][i] = [key,count+1]
+        
+            data_res[globalParameter['BotReactionPoints'][i][0]] = globalParameter['BotReactionPoints'][i][1]
+        pass   
+    else:
+        pass
+    
+
+    result = app.response_class(
+        response=json.dumps(data_res),
+        status=200,
+        mimetype='application/json'
+    )
+
+    return result
+
 def Randbackground():
     backgrounds = []
     for _background in glob.glob(os.path.join(globalParameter['PathBackground'], "*.png")):
@@ -209,10 +398,20 @@ def OrganizeParameters():
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
 
-
     for _imgReaction in glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.png")):
         filename = Path(_imgReaction).stem
         globalParameter['BotImgReaction'].append([str(filename).split("_")[0], str(globalParameter['flaskstatic_folder'] + _imgReaction.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//'))])
+    
+        findReactionPoint = False
+        for _botreactionpoints in globalParameter['BotReactionPoints']:
+            if _botreactionpoints[0] == str(filename).split("_")[0].split("_")[0]:
+                findReactionPoint = True
+                break
+        
+        if(findReactionPoint == False):
+            globalParameter['BotReactionPoints'].append([str(filename).split("_")[0].split("_")[0], 0])
+
+    print(globalParameter['BotReactionPoints'])        
     #print(globalParameter['BotImgReaction'])
 
 def LoadVarsIni2(config,sections):
@@ -237,7 +436,18 @@ def LoadVarsIni2(config,sections):
             #reaction_xxx = expression  
             globalParameter['BotReactionTranslations'].append([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
             print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
-            pass       
+            pass   
+    if('BotReactionPoints' in sections):                    
+        for key in config['BotReactionPoints']:
+            findReactionPoint = False
+            for _botreactionpoints in globalParameter['BotReactionPoints']:
+                if _botreactionpoints[0] == key:
+                    findReactionPoint = True
+                    break
+            
+            if(findReactionPoint == False):
+                globalParameter['BotReactionPoints'].append([key, int(config['BotReactionPoints'][key])])
+            pass   
 
     if('MenuLinks' in sections):            
         globalParameter['MenuLinks'].clear()      
