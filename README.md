@@ -16,8 +16,9 @@ Some examples of bots that can be inserted.
 ### Original
 ![](./External/examples/example_000.png)
 
-- Avatar model : [sutemo](https://sutemo.itch.io/female-mature-anime-sprite)
-- Background model : [florassence](https://florassence.itch.io/garden-backgrounds)
+- Avatar model 001 and 100: [sutemo](https://sutemo.itch.io/female-mature-anime-sprite)
+- Background model 001: [florassence](https://florassence.itch.io/garden-backgrounds)
+- Background model 100 : [fluffness](https://cloudnovel.net/fluffness/background/house-day-night-etc)
 
 ## Instalation
 

@@ -25,6 +25,7 @@ globalParameter['BotIp'] = None
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
 globalParameter['BotReactionPoints'] = []
+globalParameter['BotReactionLevels'] = []
 globalParameter['CommonStatus'] = 'normal'
 
 globalParameter['MenuLinks'] = []
@@ -48,7 +49,20 @@ def description2():
 @app.route('/reload')
 def ReloadParameters():
     LoadVarsIni2()
+    OrganizeParameters()
     return 'ok'
+
+def BotReactionPoints2Text():
+    global globalParameter
+
+    points_text = ""
+    for i in range(0,len(globalParameter['BotReactionPoints'])):
+        if globalParameter['BotReactionPoints'][i][0] == globalParameter['CommonStatus']:
+            continue
+
+        points_text = points_text + " " + str(globalParameter['BotReactionPoints'][i][0]) + ": " + str(globalParameter['BotReactionPoints'][i][1]) + "<br>"
+
+    return points_text
 
 @app.route('/bot')
 def makePageBot():
@@ -69,8 +83,6 @@ def makePageBot():
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
     ext_font_awesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
-    ext_chart_js = 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js'
-    ext_feather_js = 'https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js'
 
     background = globalParameter['background']
     img_max_height_mobile = globalParameter['img_max_height_mobile']
@@ -128,8 +140,8 @@ def makePageBot():
     #points
     PAGE_BODY += '''
         <div style="margin-left: 80%; margin-right: 5%; position: relative; overflow-y: auto; max-height:70%;"> 
-            <div style="height: 30%" id="score"> 
-                <canvas id="myChart" style="height: 100%; background-color: rgba(255, 255, 255, 0.7);"></canvas>
+            <div style="background-color: rgba(255, 255, 255, 0.7);" id="score"> 
+                ''' + BotReactionPoints2Text() + '''
             </div>  
             &nbsp;
         </div>
@@ -158,64 +170,6 @@ def makePageBot():
     PAGE_BODY += '</body>'
 
     PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
-    PAGE_SPRIPT += '<script src="' + ext_chart_js + '" crossorigin="anonymous"></script>'
-    PAGE_SPRIPT += '<script src="' + ext_feather_js + '" crossorigin="anonymous"></script>'
-
-    ReactionPoints_LABELS = ""
-    ReactionPoints_VALUES = ""
-
-    for i in range(0,len(globalParameter['BotReactionPoints'])):
-        if globalParameter['BotReactionPoints'][i][0] == globalParameter['CommonStatus']:
-            continue
-
-        ReactionPoints_LABELS = ReactionPoints_LABELS + "'" + str(globalParameter['BotReactionPoints'][i][0]) + "',"
-        ReactionPoints_VALUES = ReactionPoints_VALUES + str(globalParameter['BotReactionPoints'][i][1]) + ","
-
-    PAGE_SPRIPT += '''<script>
-    (function () 
-        {  
-            feather.replace({ 'aria-hidden': 'true' });  
-            var ctx = document.getElementById('myChart');  
-            var myChart = new Chart(ctx, 
-                {
-                    type: 'radar',
-                    data: {
-                    labels: [  ''' + ReactionPoints_LABELS + '''],
-                    datasets: [
-                        {  
-                            data: [''' + ReactionPoints_VALUES + '''  ],  
-                            label: 'Score',
-                            fill: true,
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgb(54, 162, 235)',
-                            pointBackgroundColor: 'rgb(54, 162, 235)',
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: 'rgb(54, 162, 235)'
-                        }]},
-                    options: {
-                            elements: { line: { borderWidth: 2 } },
-                            legend: {  display: false},
-                            scale: {
-                                    angleLines: {
-                                        display: false
-                                    },
-                                    gridLines: {
-                                        display: true
-                                    },
-                                    pointLabels: {
-                                        display: true
-                                    },
-                                    ticks: {
-                                        display: false
-                                    },
-                            }
-                        } 
-                            
-                     });
-        })();
-    </script>'''
-
     PAGE_SPRIPT += '''<script>
         var img_agent_reaction = [];
         var dict_img_agent_reaction_lenghts = [];
@@ -229,7 +183,6 @@ def makePageBot():
         var img_agent = document.getElementById("agent");
         var chat = document.getElementById("input-chat");
     '''
-
 
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
@@ -322,7 +275,20 @@ def makePageBot():
             xhr.onreadystatechange = function() { 
                 if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
                 {	
-                    var datas = JSON.parse(xhr.response);           
+                    var data = JSON.parse(xhr.response);
+
+                    if(data.hasOwnProperty('needreload')){
+                        window.location.reload();
+                    }
+                    else
+                    {
+                        var points_text = "";
+                        for (let key in data) {
+                            points_text = points_text + key + ": " + data[key] + "<br>";
+                            console.log(key + ": "+ data[key])
+                        }
+                        score.innerHTML = points_text;
+                    } 
                 }
             };
             xhr.send(data);     
@@ -372,7 +338,10 @@ def botreactionpoints():
     else:
         pass
     
-
+    if(Checklevel()==True):
+        data_res["needreload"] = 1
+        OrganizeParameters()
+    
     result = app.response_class(
         response=json.dumps(data_res),
         status=200,
@@ -398,6 +367,7 @@ def OrganizeParameters():
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
 
+    globalParameter['BotImgReaction'].clear()
     for _imgReaction in glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.png")):
         filename = Path(_imgReaction).stem
         globalParameter['BotImgReaction'].append([str(filename).split("_")[0], str(globalParameter['flaskstatic_folder'] + _imgReaction.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//'))])
@@ -414,6 +384,43 @@ def OrganizeParameters():
     print(globalParameter['BotReactionPoints'])        
     #print(globalParameter['BotImgReaction'])
 
+def Checklevel():
+    global globalParameter
+
+    needReorganize = False
+
+    CurrentBackground = globalParameter['CurrentBackground']
+    CurrentAgent = globalParameter['CurrentAgent']
+
+    for _botreactionlevel in globalParameter['BotReactionLevels']:
+        botreactionlevel_feeling = _botreactionlevel[0]
+        botreactionlevel_points = _botreactionlevel[1]
+        botreactionlevel_target = _botreactionlevel[2]
+        botreactionlevel_value = _botreactionlevel[3]
+        for _botreactionpoint in globalParameter['BotReactionPoints']:
+            botreactionpoint_feeling = _botreactionpoint[0]
+            botreactionpoint_points = _botreactionpoint[1]
+            
+            if(botreactionlevel_feeling != botreactionpoint_feeling):
+                continue
+
+            if(int(botreactionlevel_points) > int(botreactionpoint_points)):
+                continue
+
+            if(botreactionlevel_target.lower() == "CurrentAgent".lower()):
+                globalParameter['CurrentAgent'] = botreactionlevel_value
+
+            if(botreactionlevel_target.lower() == "CurrentBackground".lower()):
+                globalParameter['CurrentBackground'] = botreactionlevel_value
+
+    if(CurrentBackground != globalParameter['CurrentBackground'] or CurrentAgent != globalParameter['CurrentAgent']):
+        print('needReorganize')
+        globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
+        globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
+        needReorganize = True
+
+    return needReorganize
+
 def LoadVarsIni2(config,sections):
     global globalParameter
 
@@ -424,20 +431,25 @@ def LoadVarsIni2(config,sections):
     globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
     globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
 
-    if('BotImgReaction' in sections):                    
+    if('BotImgReaction' in sections):      
+        globalParameter['BotImgReaction'].clear()              
         for key in config['BotImgReaction']:
             #reaction_xxx = image  
             #preference for loading image reactions
             globalParameter['BotImgReaction'].append([str(key).split("_")[0], str(config['BotImgReaction'][key])])
             print([str(key).split("_")[0], str(config['BotImgReaction'][key])])
             pass  
-    if('BotReactionTranslations' in sections):                    
+ 
+    if('BotReactionTranslations' in sections):  
+        globalParameter['BotReactionTranslations'].clear()                    
         for key in config['BotReactionTranslations']:
             #reaction_xxx = expression  
             globalParameter['BotReactionTranslations'].append([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
             print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
             pass   
-    if('BotReactionPoints' in sections):                    
+
+    if('BotReactionPoints' in sections):    
+        globalParameter['BotReactionPoints'].clear()                
         for key in config['BotReactionPoints']:
             findReactionPoint = False
             for _botreactionpoints in globalParameter['BotReactionPoints']:
@@ -447,6 +459,14 @@ def LoadVarsIni2(config,sections):
             
             if(findReactionPoint == False):
                 globalParameter['BotReactionPoints'].append([key, int(config['BotReactionPoints'][key])])
+            pass  
+    
+    if('BotReactionLevels' in sections):    
+        globalParameter['BotReactionLevels'].clear()                
+        for key in config['BotReactionLevels']:
+            #reaction_xxx = expression  
+            globalParameter['BotReactionLevels'].append([str(key).split("_")[0], str(key).split("_")[1], str(key).split("_")[2], str(config['BotReactionLevels'][key])])
+            print(globalParameter['BotReactionLevels'][-1])
             pass   
 
     if('MenuLinks' in sections):            
@@ -480,7 +500,7 @@ def MainLocal():
     globalsub.subs(description, description2)    
 
     GetCorrectPath()
-
+    Checklevel()
     OrganizeParameters()
 
     jarvis_file = globalParameter['PathJarvis']
