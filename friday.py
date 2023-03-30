@@ -7,6 +7,7 @@ import json
    
 #Enable command jarvis
 globalParameter['BotCommandJarvis'] = "[Jarvis]"
+globalParameter['BotCommandLearn'] = "[learn]"
 
 #Loading in GetCorrectPath()
 globalParameter['Path'] = None
@@ -27,6 +28,7 @@ globalParameter['BotReactionTranslations'] = []
 globalParameter['BotReactionPoints'] = []
 globalParameter['BotReactionLevels'] = []
 globalParameter['CommonStatus'] = 'normal'
+globalParameter['MinimumValueToAddTagInAsks'] = 100000000
 
 globalParameter['MenuLinks'] = []
 globalParameter['MenuCommands'] = []
@@ -174,9 +176,10 @@ def makePageBot():
         var img_agent_reaction = [];
         var dict_img_agent_reaction_lenghts = [];
         var list_reaction_translations = [];
-        var list_reaction_points = [];
+        var list_reaction_tags = [];
         var time_out_reaction;
         var time_out_reaction_delay = 20000;
+        var top_reaction = '';
         
         $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
         
@@ -186,6 +189,7 @@ def makePageBot():
 
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
+        PAGE_SPRIPT += 'list_reaction_tags.push("' + list_img_reaction[0] + '");'
 
     for list_reaction_translations in globalParameter['BotReactionTranslations']:
         PAGE_SPRIPT += 'list_reaction_translations.push(["' + list_reaction_translations[1] + '","' + list_reaction_translations[0] + '"]);'    
@@ -222,8 +226,33 @@ def makePageBot():
                 break;
             }
         }
+
+        if(result == "''' + globalParameter['CommonStatus'] +'''")
+        {
+            for (id in list_reaction_tags) 
+            {
+                if(text.toString().indexOf('[' + list_reaction_tags[id] + ']') != -1)
+                {
+                    result = list_reaction_tags[id];
+                    break;
+                }
+            }
+        }        
         return result;
     }'''
+
+    PAGE_SPRIPT += '''\nfunction GetTags(text)
+    {
+        result = text;
+
+        for (id in list_reaction_tags) 
+        {
+            result = result.replace('[' + list_reaction_tags[id] + ']', "");
+        }        
+
+        return result
+    }'''
+
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
@@ -238,7 +267,10 @@ def makePageBot():
             if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) 
             { link = "''' + botresponsecommand + '''";}; 
             var xhr = new XMLHttpRequest();
-            var data = '{"ask": "' + chat.value + '"}';
+            var data = '{"ask": "' + chat.value + '", "acceptTags": "1", "tag": "' + top_reaction + '"}';
+            console.log(top_reaction)
+            if(chat.value.indexOf("''' + globalParameter['BotCommandLearn'] + '''") > -1 || top_reaction == '' ) 
+            var data = '{"ask": "' + chat.value + '", "acceptTags": "1" }';    
             xhr.open("POST", link, true);
             xhr.setRequestHeader("Accept", "application/json");
             xhr.setRequestHeader("Content-Type", "application/json");
@@ -247,7 +279,7 @@ def makePageBot():
             xhr.onreadystatechange = function() { 
                 if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
                 {	
-                    response_chat.innerHTML = xhr.responseText; 
+                    response_chat.innerHTML = GetTags(xhr.responseText); 
                     feeling = GetReactionTranslations(xhr.responseText);
                     SetImageReaction(feeling); 
                     ReactionPoints(feeling);
@@ -283,11 +315,22 @@ def makePageBot():
                     else
                     {
                         var points_text = "";
+                        var biggest_key = "";
+                        var biggest_value = ''' + str(globalParameter['MinimumValueToAddTagInAsks']) + ''';
                         for (let key in data) {
                             points_text = points_text + key + ": " + data[key] + "<br>";
                             console.log(key + ": "+ data[key])
+
+                            var value = parseInt(data[key]);
+                            if(value > biggest_value)
+                            {
+                                biggest_value = value;
+                                biggest_key = key;
+                            }
                         }
                         score.innerHTML = points_text;
+                        top_reaction = biggest_key;
+                        console.log("top feeling (after filter): " + biggest_key)
                     } 
                 }
             };
