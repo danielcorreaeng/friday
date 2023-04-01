@@ -103,6 +103,7 @@ def makePageBot():
     PAGE_STYLE += '#responsive-imgs img {display: block;margin: 1px auto;} '
     PAGE_STYLE += '@media screen and (max-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_mobile + '; max-height: ' + img_max_height_mobile + ';} #input-chat, #buttonchat, #responsechat {line-height: ' + chat_height_mobile + ';font-size: ' + chat_font_height_mobile + ';} } '
     PAGE_STYLE += '@media screen and (min-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_web + '; max-height: ' + img_max_height_web + ';}  #input-chat, #buttonchat, #responsechat {line-height: ' + chat_height_web + ';font-size: ' + chat_font_height_web + ';} } '
+    PAGE_STYLE += '.hidden {display: none;} '
     PAGE_STYLE += '.effect1 {animation-name:img-ani1;animation-duration: 2s; animation-timing-function: ease-in;}.effect2 {animation-name:img-ani2;animation-duration: 2s; animation-timing-function: ease-in;}@keyframes img-ani1 {from{opacity:0;}to{opacity: 1;}}@keyframes img-ani2 {from{opacity:0;}to{opacity: 1;}} '
     PAGE_STYLE += '.chat {z-index: 1500;display: block;margin: 20px auto;max-width: 90%;} '
     PAGE_STYLE += '.maxup {z-index: 3000}'
@@ -156,10 +157,21 @@ def makePageBot():
             <img id="agent" class="fixed-bottom">
         </div>
         <div class="chat fixed-bottom">
-            <div id="responsechat" style="background-color: rgba(255, 255, 255, 0.4);margin: 10px auto;"> 
-                 
+            <div id="chat_button_3" class="input-group input-space" style="visibility:hidden;">
+                <input type="button" id="button_3" class="form-control" value="3" onclick="SendChatButton('button_3');return false;">
             </div>
-            <div class="input-group input-space">
+            <div id="chat_button_2" class="input-group input-space" style="visibility:hidden;">
+                <input type="button" id="button_2" class="form-control" value="2" onclick="SendChatButton('button_2');return false;">
+            </div>
+            <div id="chat_button_1" class="input-group input-space" style="visibility:hidden;">
+                <input type="button" id="button_1" class="form-control" value="1" onclick="SendChatButton('button_1');return false;">
+            </div>
+            <div id="chat_button_0" class="input-group input-space" onclick="SendChatButton('button_0');return false;" style="visibility:hidden;">
+                <input type="button" id="button_0" class="form-control" value="0">
+            </div>        
+            <div id="responsechat" style="background-color: rgba(255, 255, 255, 0.4);margin: 10px auto;">                  
+            </div>
+            <div id="chat_input_00" class="input-group input-space">
                 <input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2">
                 <div class="input-group-append">
                     <span class="input-group-text" id="basic-addon2">
@@ -243,20 +255,59 @@ def makePageBot():
 
     PAGE_SPRIPT += '''\nfunction GetTags(text)
     {
-        result = text;
+        var result = text;
 
         for (id in list_reaction_tags) 
         {
             result = result.replace('[' + list_reaction_tags[id] + ']', "");
         }        
 
-        return result
-    }'''
+        buttonshow('chat_button_0');
+        buttonshow('chat_button_1');
+        buttonshow('chat_button_2');
+        buttonshow('chat_button_3');        
 
+        var response = text.split("[button]");
+
+        if(response.length<=1)
+        {
+            return result;
+        }
+
+        document.getElementById("chat_input_00").style.visibility = "hidden";
+        buttons = response.slice(1);
+        result= response[0];
+
+        for (let i=0; i<Math.min(buttons.length,4); i++)  {
+            buttonshow('chat_button_' + i.toString(), 'button_' + i.toString(), true, buttons[i]); 
+        }
+
+        return result;
+    }'''
+    PAGE_SPRIPT += '''\nfunction SendChatButton(id){
+        var text = document.getElementById(id).value;      
+        document.getElementById("input-chat").value = text;
+        SendChat();
+    }'''
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
-    PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
+    PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot(); document.getElementById("chat_input_00").style.visibility = "visible";}'''
     PAGE_SPRIPT += '''\nfunction SendMessageInputChat(text) {document.getElementById("input-chat").value=text}'''
+    PAGE_SPRIPT += '''
+        function buttonshow(_div, _button="none", show=false, bt_value="button") {
+        
+            if(show==true)
+            {
+                document.getElementById(_div).style.visibility = "visible";
+                document.getElementById(_button).value = bt_value;
+            }
+            else
+            {
+                document.getElementById(_div).style.visibility = "hidden";
+            }
+            //document.getElementById(id).style.width = "100%";
+        }
+    '''    
     PAGE_SPRIPT += '''\n
         function SendMessageBot(){
             var img_agent = document.getElementById("agent");  
@@ -268,7 +319,6 @@ def makePageBot():
             { link = "''' + botresponsecommand + '''";}; 
             var xhr = new XMLHttpRequest();
             var data = '{"ask": "' + chat.value + '", "acceptTags": "1", "tag": "' + top_reaction + '"}';
-            console.log(top_reaction)
             if(chat.value.indexOf("''' + globalParameter['BotCommandLearn'] + '''") > -1 || top_reaction == '' ) 
             var data = '{"ask": "' + chat.value + '", "acceptTags": "1" }';    
             xhr.open("POST", link, true);
