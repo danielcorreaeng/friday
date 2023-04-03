@@ -397,6 +397,8 @@ def makePageBot():
     PAGE_SPRIPT += '''</script>'''
     #PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
     PAGE_SPRIPT += '''<script>var chat = document.getElementById("input-chat");chat.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();}; });</script>'''
+    PAGE_SPRIPT += '''<script>var chatButton = document.getElementById("buttonchat");chatButton.addEventListener("click", function(event) {SendChat();});</script>'''
+
 
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
