@@ -1,38 +1,20 @@
-import sys,os
-import argparse
-import unittest
-import configparser
-from time import sleep
-import subprocess
-import glob
 import random
-import requests
-import datetime
-import json
+import globalsub
+import glob
 from pathlib import Path
-
-from chatterbot import ChatBot
-from chatterbot.trainers import ChatterBotCorpusTrainer, ListTrainer
-from chatterbot.comparisons import levenshtein_distance
-
-from flask import Flask, redirect, url_for, request, render_template
-from flask_cors import CORS
-
-globalParameter = {}
-
+from chatbot import *
+import json
+   
 #Enable command jarvis
-globalParameter['PathJarvis'] = os.path.join("C:\\", "Jarvis", "Jarvis.py")
-globalParameter['PathExecutable'] = "python"
 globalParameter['BotCommandJarvis'] = "[Jarvis]"
-globalParameter['allowedexternalrecordbase'] = ""
+globalParameter['BotCommandLearn'] = "[learn]"
 
 #Loading in GetCorrectPath()
 globalParameter['Path'] = None
-globalParameter['PathBackgroud'] = None
+globalParameter['PathBackground'] = None
 globalParameter['PathAgentReaction'] = None
-
-#globalParameter['InternalPathBackgroud'] = "bot/background/"
-#globalParameter['InternalPathAgentReaction'] = "bot/agent/"
+globalParameter['CurrentAgent'] = "agent-100"
+globalParameter['CurrentBackground'] = "background-000"
 
 globalParameter['LocalPort'] = 8821
 globalParameter['LocalIp'] = "0.0.0.0"
@@ -43,13 +25,18 @@ globalParameter['BotIp'] = None
 
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
+globalParameter['BotReactionPoints'] = []
+globalParameter['BotReactionLevels'] = []
 globalParameter['CommonStatus'] = 'normal'
+globalParameter['MinimumValueToAddTagInAsks'] = 100000000
+globalParameter['HideChatIfButtons'] = True
+globalParameter['GlobalTimerLimit'] = -1
 
 globalParameter['MenuLinks'] = []
 globalParameter['MenuCommands'] = []
 
 globalParameter['flaskstatic_folder'] = 'External'
-globalParameter['background'] = 'External/bot/background/1.png'
+globalParameter['background'] = None
 globalParameter['img_max_height_mobile'] = '180%'
 globalParameter['img_max_height_web'] = '100%'
 globalParameter['img_max_width_mobile'] = '110%'
@@ -60,159 +47,26 @@ globalParameter['chat_font_height_web'] = 'medium'
 globalParameter['chat_font_height_mobile'] = 'xx-large'
 globalParameter['max_width_web'] = '1200px'
 
-app = Flask(__name__, static_url_path="/" + globalParameter['flaskstatic_folder'], static_folder=globalParameter['flaskstatic_folder'])
-CORS(app)
-
-class TestCases(unittest.TestCase):
-    def test_dump(self):
-        check = True
-        self.assertTrue(check)
-
-def Run(command, parameters=None, wait=False):
-
-    if(globalParameter['PathJarvis'] == None):
-        return
-
-    if(parameters != None):
-        proc = subprocess.Popen([command, parameters], stdout=subprocess.PIPE, shell=True)
-    else:
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-
-    if(wait == True):
-        proc.communicate()
-
-def RunJarvis(tags):
-	Run(globalParameter['PathExecutable'] + ' ' + globalParameter['PathJarvis'] + ' ' + tags, None, False)          
-
-class MyChatBot():
-    def __init__(self):
-        noob = False        
-        if os.path.isfile(str(globalParameter['PathDB'])) == False:
-            noob = True
-            print('mode noob')
-        else:
-            print('mode noob off')
-        
-        self.chatbot = ChatBot(
-            'Jarvis',
-            storage_adapter='chatterbot.storage.SQLStorageAdapter',
-            database_uri='sqlite:///' + str(globalParameter['PathDB']),
-            logic_adapters=[
-                {
-                    'import_path': 'chatterbot.logic.BestMatch',
-                    'default_response': 'Não entendi',
-                    'maximum_similarity_threshold': globalParameter['maximum_similarity_threshold']
-                }
-            ]
-        )
-
-        if noob == True:
-            self.training4memory()
-		
-    def __del__(self):
-        pass
-
-    def training4conversation(self, conversation):
-        #conversation = ["oi","olá", "Tchau","Até logo", "=)","Legal"]
-        trainer = ListTrainer(self.chatbot)
-        trainer.train(conversation)
-    
-    def training4memory(self):
-        trainer = ChatterBotCorpusTrainer(self.chatbot)
-        #trainer.train("chatterbot.corpus.english")
-        #trainer.train("chatterbot.corpus.portuguese")
-
-        print('training4memory')
-        if(os.path.exists("pt")==True):
-            trainer.train("pt")
-            print('training4memory pt')
-        else:
-            trainer.train("chatterbot.corpus.portuguese")
-            print('training4memory corpus.portuguese')
-
-    def response(self, ask):
-        target = None
-        flag = None
-
-        if(str(ask).lower().find('[img]') >= 0):
-            target = '[img]'
-        if(str(ask).lower().find('[file]') >= 0):
-            target = '[file]'
-        if(str(ask).lower().find('[link]') >= 0):
-            target = '[link]'     
-        if(str(ask).lower().find('[json]') >= 0):
-            target = '[json]'  
-            flag = '-n'
-        if(str(ask).lower().find('[jsonlink]') >= 0):
-            target = '[jsonlink]'                                 
-            flag = '-l'
-
-        if(target != None and str(ask).lower().find('[base|tags]') >= 0):
-            tags = ask.split('[base|tags]')[1]
-            target = ask.split('[base|tags]')[0].replace(target,'')
-            target = target[1:-1].replace(' ','_')
-            #print(tags)
-            #print(target)
-            cmd = 'bookmark -base=services -u ' + str(globalParameter['allowedexternalrecordbase']) + str(tags) + " " + str(flag) + " " + str(target)
-            print(cmd)
-            RunJarvis(cmd)
-
-            result = 'got it! :P'
-
-            if(str(globalParameter['allowedexternalrecordbase']) != ""):
-                result = result + " (recorded in base " + str(globalParameter['allowedexternalrecordbase']) + ")"
-
-            return result
-
-        if(str(ask).lower().find('[learn]') >= 0 and str(ask).lower().find('[answer]') >= 0):
-            answer = ask.split('[answer]')[1]
-            ask = ask.split('[answer]')[0].replace('[learn]','')            
-            self.training4conversation([ask, str(answer)])          
-
-        res = self.chatbot.get_response(ask)
-
-        return res           
-
-def BotResponse(ask):
-    bot = MyChatBot()
-    ask = ask.replace('_', ' ')
-    #print(ask)
-    res = bot.response(ask)   
-    print(res) 
-    return str(res)
-
-@app.route('/botresponse',methods = ['POST', 'GET'])
-def botresponse():
-    if request.method == 'POST':
-        data = request.get_json(force=True)  
-        #print(ask)
-        return BotResponse(data['ask'])
-    else:
-        ask = request.args.get('ask')
-        return BotResponse(ask)
-
-
-@app.route('/botresponsecommand',methods = ['POST', 'GET'])
-def botresponsecommand():
-    if request.method == 'POST':
-        data = request.get_json(force=True)  
-        print(data['ask'])
-
-        if(globalParameter['PathJarvis'] == None):
-            return 'Command not implemented'
-
-        RunJarvis(str(data['ask']).replace(globalParameter['BotCommandJarvis'], ""))
-
-        return 'Command accepted!'
-
-@app.route('/')
-def index():
-    return str(Main.__doc__) + " | ip server : " +  str(globalParameter['LocalIp']) + ":" + str(globalParameter['LocalPort'])
+def description2():
+    return str(MainLocal.__doc__) + " | ip server : " +  str(globalParameter['LocalIp']) + ":" + str(globalParameter['LocalPort'])
 
 @app.route('/reload')
 def ReloadParameters():
-    LoadParameters()
+    LoadVarsIni2()
+    OrganizeParameters()
     return 'ok'
+
+def BotReactionPoints2Text():
+    global globalParameter
+
+    points_text = ""
+    for i in range(0,len(globalParameter['BotReactionPoints'])):
+        if globalParameter['BotReactionPoints'][i][0] == globalParameter['CommonStatus']:
+            continue
+
+        points_text = points_text + " " + str(globalParameter['BotReactionPoints'][i][0]) + ": " + str(globalParameter['BotReactionPoints'][i][1]) + "<br>"
+
+    return points_text
 
 @app.route('/bot')
 def makePageBot():
@@ -224,7 +78,8 @@ def makePageBot():
         globalParameter['BotIp'] =  "http://" +  globalParameter['BotIp'] + "/"
         pass
     botresponse = globalParameter['BotIp'] + "botresponse" 
-    botresponsecommand = str(request.url_root) + "botresponsecommand"
+    botresponsecommand = str(request.url_root) + "/botresponsecommand"
+    botreactionpoints = str(request.url_root) + "/botreactionpoints" 
 
     Randbackground()
 
@@ -232,6 +87,7 @@ def makePageBot():
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
     ext_font_awesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
+
     background = globalParameter['background']
     img_max_height_mobile = globalParameter['img_max_height_mobile']
     img_max_height_web = globalParameter['img_max_height_web']
@@ -247,8 +103,9 @@ def makePageBot():
     PAGE_STYLE = '<style>'
     PAGE_STYLE += 'html, body {background: url("' + background + '") no-repeat center center fixed; -webkit-background-size: cover;-moz-background-size: cover;-o-background-size: cover;background-size: cover;} '
     PAGE_STYLE += '#responsive-imgs img {display: block;margin: 1px auto;} '
-    PAGE_STYLE += '@media screen and (max-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_mobile + '; max-height: ' + img_max_height_mobile + ';} #input-chat, #buttonchat {line-height: ' + chat_height_mobile + ';font-size: ' + chat_font_height_mobile + ';} } '
-    PAGE_STYLE += '@media screen and (min-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_web + '; max-height: ' + img_max_height_web + ';}  #input-chat, #buttonchat {line-height: ' + chat_height_web + ';font-size: ' + chat_font_height_web + ';} } '
+    PAGE_STYLE += '@media screen and (max-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_mobile + '; max-height: ' + img_max_height_mobile + ';} #input-chat, #buttonchat, #responsechat {line-height: ' + chat_height_mobile + ';font-size: ' + chat_font_height_mobile + ';} } '
+    PAGE_STYLE += '@media screen and (min-width: ' + max_width_web + ') {.responsive-imgs-resp img { max-width: ' + img_max_width_web + '; max-height: ' + img_max_height_web + ';}  #input-chat, #buttonchat, #responsechat {line-height: ' + chat_height_web + ';font-size: ' + chat_font_height_web + ';} } '
+    PAGE_STYLE += '.hidden {display: none;} '
     PAGE_STYLE += '.effect1 {animation-name:img-ani1;animation-duration: 2s; animation-timing-function: ease-in;}.effect2 {animation-name:img-ani2;animation-duration: 2s; animation-timing-function: ease-in;}@keyframes img-ani1 {from{opacity:0;}to{opacity: 1;}}@keyframes img-ani2 {from{opacity:0;}to{opacity: 1;}} '
     PAGE_STYLE += '.chat {z-index: 1500;display: block;margin: 20px auto;max-width: 90%;} '
     PAGE_STYLE += '.maxup {z-index: 3000}'
@@ -284,17 +141,69 @@ def makePageBot():
         for list_links in globalParameter['MenuCommands']:
             PAGE_BODY += """<a class="dropdown-item" onclick="SendMessageInputChat('"""+ globalParameter['BotCommandJarvis'] + """ """ + list_links[1] + """')" href="#">""" + list_links[0] + """</a>"""
         PAGE_BODY += '</div>'
+
+    #points
+    PAGE_BODY += '''
+        <div style="margin-left: 80%; margin-right: 5%; position: relative; overflow-y: auto; max-height:70%;"> 
+            <div style="background-color: rgba(255, 255, 255, 0.7);" id="score"> 
+                ''' + BotReactionPoints2Text() + '''
+            </div>  
+            &nbsp;
+        </div>
+    '''
     
     PAGE_BODY += '</div>'
 
-    PAGE_BODY += '<div id="responsive-imgs" class="responsive-imgs-resp"><img id="agent" class="fixed-bottom"></div><div class="chat fixed-bottom"><div class="input-group input-space"><input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2"><div class="input-group-append"><span class="input-group-text" id="basic-addon2"><a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a></span></div></div></div>'
+    PAGE_BODY += '''
+        <div id="responsive-imgs" class="responsive-imgs-resp">
+            <img id="agent" class="fixed-bottom">
+        </div>
+        <div class="chat fixed-bottom">
+            <div id="chat_button_3" class="input-group input-space" style="visibility:hidden;">
+                <input type="button" id="button_3" class="form-control" value="3" onclick="SendChatButton('button_3');return false;">
+            </div>
+            <div id="chat_button_2" class="input-group input-space" style="visibility:hidden;">
+                <input type="button" id="button_2" class="form-control" value="2" onclick="SendChatButton('button_2');return false;">
+            </div>
+            <div id="chat_button_1" class="input-group input-space" style="visibility:hidden;">
+                <input type="button" id="button_1" class="form-control" value="1" onclick="SendChatButton('button_1');return false;">
+            </div>
+            <div id="chat_button_0" class="input-group input-space" onclick="SendChatButton('button_0');return false;" style="visibility:hidden;">
+                <input type="button" id="button_0" class="form-control" value="0">
+            </div>        
+            <div id="responsechat" style="background-color: rgba(255, 255, 255, 0.4);margin: 10px auto;">                  
+            </div>
+            <div id="chat_input_00" class="input-group input-space">
+                <input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2">
+                <div class="input-group-append">
+                    <span class="input-group-text" id="basic-addon2">
+                        <a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    '''
     PAGE_BODY += '</body>'
 
     PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
-    PAGE_SPRIPT += '''<script>var img_agent_reaction = [];var dict_img_agent_reaction_lenghts = []; var list_reaction_translations = []; var time_out_reaction;var time_out_reaction_delay = 20000;$(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );var img_agent = document.getElementById("agent");var chat = document.getElementById("input-chat");'''
+    PAGE_SPRIPT += '''<script>
+        var img_agent_reaction = [];
+        var dict_img_agent_reaction_lenghts = [];
+        var list_reaction_translations = [];
+        var list_reaction_tags = [];
+        var time_out_reaction;
+        var time_out_reaction_delay = 20000;
+        var top_reaction = '';
+        
+        $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
+        
+        var img_agent = document.getElementById("agent");
+        var chat = document.getElementById("input-chat");
+    '''
 
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
+        PAGE_SPRIPT += 'list_reaction_tags.push("' + list_img_reaction[0] + '");'
 
     for list_reaction_translations in globalParameter['BotReactionTranslations']:
         PAGE_SPRIPT += 'list_reaction_translations.push(["' + list_reaction_translations[1] + '","' + list_reaction_translations[0] + '"]);'    
@@ -302,121 +211,447 @@ def makePageBot():
     PAGE_SPRIPT += '''for (id in img_agent_reaction) {if(img_agent_reaction[id][0] in dict_img_agent_reaction_lenghts){var value = dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]];dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]] = value + 1;}else{dict_img_agent_reaction_lenghts[img_agent_reaction[id][0]] = 1;}}img_agent.src = GetImageReaction("normal"); time_out_reaction = setTimeout(function(){ SetImageReaction("normal"); }, time_out_reaction_delay); });'''
     PAGE_SPRIPT += '''\nfunction GetWindowsCenter(target){return Math.max(0, (($(window).width() - $(target).outerWidth()) / 2) + $(window).scrollLeft());}'''
     PAGE_SPRIPT += '''\nfunction SetImageReaction(feeling){console.log(feeling);clearTimeout(time_out_reaction);var img_agent = document.getElementById("agent");img_agent.src = GetImageReaction(feeling); time_out_reaction = setTimeout(function(){ SetImageReaction("normal"); }, time_out_reaction_delay);  img_agent.style.marginLeft = (GetWindowsCenter(img_agent)*(GetNewPosition()/100)).toString() + "px";if(img_agent.classList.contains("effect1") == false){img_agent.classList.remove("effect2");img_agent.classList.add("effect1");}else{img_agent.classList.remove("effect1");img_agent.classList.add("effect2");}}'''
-    PAGE_SPRIPT += '''\nfunction GetImageReaction(feeling){var max = dict_img_agent_reaction_lenghts[feeling];var number = MakeRand(0,max-1);var result = img_agent_reaction[0][1];var count = 0;for (id in img_agent_reaction) {if(img_agent_reaction[id][0] == feeling){if(count == number){result = img_agent_reaction[id][1];break;}count = count + 1;}}return result;}'''
-    PAGE_SPRIPT += '''\nfunction GetReactionTranslations(text){var result = "''' + globalParameter['CommonStatus'] +'''";for (id in list_reaction_translations) {if(text.toString().indexOf(list_reaction_translations[id][0]) != -1){result = list_reaction_translations[id][1];break;}}return result;}'''
+    PAGE_SPRIPT += '''\nfunction GetImageReaction(feeling){
+        var max = dict_img_agent_reaction_lenghts[feeling];
+        var number = MakeRand(0,max-1);
+        var result = img_agent_reaction[0][1];
+        var count = 0;
+        for (id in img_agent_reaction) 
+        {
+            if(img_agent_reaction[id][0] == feeling)
+            {
+                if(count == number)
+                {
+                    result = img_agent_reaction[id][1];
+                    break;
+                }
+                count = count + 1;
+            }
+        }return result;
+    }'''
+    PAGE_SPRIPT += '''\nfunction GetReactionTranslations(text)
+    {
+        var result = "''' + globalParameter['CommonStatus'] +'''";
+        for (id in list_reaction_translations) 
+        {
+            if(text.toString().indexOf(list_reaction_translations[id][0]) != -1)
+            {
+                result = list_reaction_translations[id][1];
+                break;
+            }
+        }
+
+        if(result == "''' + globalParameter['CommonStatus'] +'''")
+        {
+            for (id in list_reaction_tags) 
+            {
+                if(text.toString().indexOf('[' + list_reaction_tags[id] + ']') != -1)
+                {
+                    result = list_reaction_tags[id];
+                    break;
+                }
+            }
+        }        
+        return result;
+    }'''
+
+    PAGE_SPRIPT += '''\nfunction GetTags(text)
+    {
+        var result = text;
+
+        for (id in list_reaction_tags) 
+        {
+            result = result.replace('[' + list_reaction_tags[id] + ']', "");
+        }        
+
+        buttonshow('chat_button_0');
+        buttonshow('chat_button_1');
+        buttonshow('chat_button_2');
+        buttonshow('chat_button_3');        
+
+        var response = text.split("[button]");
+
+        if(response.length<=1)
+        {
+            return result;
+        }
+
+    ''' 
+    
+    if(globalParameter["HideChatIfButtons"]==True):
+        PAGE_SPRIPT += '''document.getElementById("chat_input_00").style.visibility = "hidden";'''
+    
+    PAGE_SPRIPT += '''
+        buttons = response.slice(1);
+        result= response[0];
+
+        for (let i=0; i<Math.min(buttons.length,4); i++)  {
+            buttonshow('chat_button_' + i.toString(), 'button_' + i.toString(), true, buttons[i]); 
+        }
+
+        return result;
+    }'''
+    PAGE_SPRIPT += '''\nfunction SendChatButton(id){
+        var text = document.getElementById(id).value;      
+        document.getElementById("input-chat").value = text;
+        SendChat();
+    }'''
     PAGE_SPRIPT += '''\nfunction GetNewPosition(){return MakeRand(20,50);}'''
     PAGE_SPRIPT += '''\nfunction MakeRand(min, max) {return Math.floor(Math.random() * (max - min + 1) + min);}'''
-    PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot();}'''
+    PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot(); document.getElementById("chat_input_00").style.visibility = "visible";}'''
     PAGE_SPRIPT += '''\nfunction SendMessageInputChat(text) {document.getElementById("input-chat").value=text}'''
-    PAGE_SPRIPT += '''\nfunction SendMessageBot(){var img_agent = document.getElementById("agent");  var chat = document.getElementById("input-chat"); var link = "''' + botresponse + '''"; if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) { link = "''' + botresponsecommand + '''";}; var xhr = new XMLHttpRequest();var data = '{"ask": "' + chat.value + '"}';xhr.open("POST", link, true);xhr.setRequestHeader("Accept", "application/json");xhr.setRequestHeader("Content-Type", "application/json");xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");xhr.setRequestHeader("Access-Control-Allow-Origin", link);xhr.onreadystatechange = function() { if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {	chat.value = xhr.responseText; feeling = GetReactionTranslations(xhr.responseText);SetImageReaction(feeling); chat.focus();chat.select();}};xhr.send(data);}'''
+    PAGE_SPRIPT += '''
+        function buttonshow(_div, _button="none", show=false, bt_value="button") {
+        
+            if(show==true)
+            {
+                document.getElementById(_div).style.visibility = "visible";
+                document.getElementById(_button).value = bt_value;
+            }
+            else
+            {
+                document.getElementById(_div).style.visibility = "hidden";
+            }
+            //document.getElementById(id).style.width = "100%";
+        }
+    '''    
+    PAGE_SPRIPT += '''\n
+        function SendMessageBot(){
+            var img_agent = document.getElementById("agent");  
+            var chat = document.getElementById("input-chat"); 
+            var response_chat = document.getElementById("responsechat");
+            var link = "''' + botresponse + '''"; 
+            if(chat.value == "" ||  chat.value == "hum"){chat.value = "hum";}; 
+            if(chat.value.indexOf("''' + globalParameter['BotCommandJarvis'] + '''") > -1) 
+            { link = "''' + botresponsecommand + '''";}; 
+            var xhr = new XMLHttpRequest();
+            var data = '{"ask": "' + chat.value + '", "acceptTags": "1", "tag": "' + top_reaction + '"}';
+            if(chat.value.indexOf("''' + globalParameter['BotCommandLearn'] + '''") > -1 || top_reaction == '' ) 
+            var data = '{"ask": "' + chat.value + '", "acceptTags": "1" }';    
+            xhr.open("POST", link, true);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");
+            xhr.setRequestHeader("Access-Control-Allow-Origin", link);
+            xhr.onreadystatechange = function() { 
+                if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
+                {	
+                    response_chat.innerHTML = GetTags(xhr.responseText); 
+                    feeling = GetReactionTranslations(xhr.responseText);
+                    SetImageReaction(feeling); 
+                    ReactionPoints(feeling);
+                    chat.focus();
+                    chat.select();
+                }
+            };
+            xhr.send(data);
+        }
+    '''
+    PAGE_SPRIPT += '''\n
+        function ReactionPoints(feeling){
+            var link = "''' + botreactionpoints + '''"; 
+            var xhr = new XMLHttpRequest();
+            var score = document.getElementById("score");  
+            var ctx = document.getElementById('myChart');  
+            
+            var data = '{"feeling": "' + feeling + '"}';
 
+            xhr.open("POST", link, true);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT");
+            xhr.setRequestHeader("Access-Control-Allow-Origin", link);
+            xhr.onreadystatechange = function() { 
+                if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
+                {	
+                    var data = JSON.parse(xhr.response);
+
+                    if(data.hasOwnProperty('needreload')){
+                        window.location.reload();
+                    }
+                    else
+                    {
+                        var points_text = "";
+                        var biggest_key = "";
+                        var biggest_value = ''' + str(globalParameter['MinimumValueToAddTagInAsks']) + ''';
+                        for (let key in data) {
+                            points_text = points_text + key + ": " + data[key] + "<br>";
+                            console.log(key + ": "+ data[key])
+
+                            var value = parseInt(data[key]);
+                            if(value > biggest_value)
+                            {
+                                biggest_value = value;
+                                biggest_key = key;
+                            }
+                        }
+                        score.innerHTML = points_text;
+                        top_reaction = biggest_key;
+                        console.log("top feeling (after filter): " + biggest_key)
+                    } 
+                }
+            };
+            xhr.send(data);     
+        }
+    '''
     PAGE_SPRIPT += '''</script>'''
     #PAGE_SPRIPT += '''<script>var input = document.getElementById("input-chat");input.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();input.focus();}; if (event.keyCode == 8 || event.keyCode == 46) {input.value=''}; });</script>'''
     PAGE_SPRIPT += '''<script>var chat = document.getElementById("input-chat");chat.addEventListener("keyup", function(event) {if (event.keyCode == 13) { SendChat();}; });</script>'''
+    PAGE_SPRIPT += '''<script>var chatButton = document.getElementById("buttonchat");chatButton.addEventListener("click", function(event) {SendChat();});</script>'''
+
 
     res = '<html>' + PAGE_HEAD + PAGE_BODY + PAGE_SPRIPT + '</html>'
     return res
 
+@app.route('/botresponsecommand',methods = ['POST', 'GET'])
+def botresponsecommand():
+    if request.method == 'POST':
+        data = request.get_json(force=True)  
+        print(data['ask'])
+
+        if(globalParameter['PathJarvis'] == None):
+            return 'Command not implemented'
+
+        RunJarvis(str(data['ask']).replace(globalParameter['BotCommandJarvis'], ""))
+
+        return 'Command accepted!'
+
+def SaveDataIni():
+    ini_file = globalParameter['configFile']
+    if(os.path.isfile(ini_file) == True):
+        with open(ini_file) as fp:
+            config = configparser.ConfigParser()
+            config.read_file(fp)
+            sections = config.sections()    
+
+            for _botreactionpoints in globalParameter['BotReactionPoints']:
+                config['BotReactionPoints'][_botreactionpoints[0]] = str(_botreactionpoints[1])
+        
+        with open(ini_file, 'w') as fp:
+            config.write(fp) 
+
+                            
+@app.route('/botreactionpoints',methods = ['POST', 'GET'])
+def botreactionpoints():
+    global globalParameter
+
+    data_res = {}
+    needreload = False
+    timer = -1
+
+    if request.method == 'POST':
+        data = request.get_json(force=True)  
+        feeling = data['feeling']
+
+        for i in range(0,len(globalParameter['BotReactionPoints'])):
+            key = globalParameter['BotReactionPoints'][i][0]        
+
+            if key == 'timer':
+                count = globalParameter['BotReactionPoints'][i][1]
+                globalParameter['BotReactionPoints'][i] = [key,count+1]
+                timer = count + 1               
+
+            if key == globalParameter['CommonStatus']:
+                continue
+
+            if key == feeling:
+                count = globalParameter['BotReactionPoints'][i][1]
+                globalParameter['BotReactionPoints'][i] = [key,count+1]
+        
+            data_res[globalParameter['BotReactionPoints'][i][0]] = globalParameter['BotReactionPoints'][i][1]
+
+        if(timer < 0):
+            globalParameter['BotReactionPoints'].append(['timer', 1])
+
+        if(int(globalParameter['GlobalTimerLimit'])>0 and timer>int(globalParameter['GlobalTimerLimit'])):
+            #globalreset
+            for i in range(0,len(globalParameter['BotReactionPoints'])):
+                key = globalParameter['BotReactionPoints'][i][0]
+                count = 0
+                globalParameter['BotReactionPoints'][i] = [key,count]
+            needreload=True
+            SaveDataIni()
+            GetCorrectPath()
+
+        SaveDataIni()
+        
+        if(Checklevel()==True):
+            needreload = True
+
+        if(needreload == True):
+            data_res["needreload"] = 1
+            OrganizeParameters()
+
+        pass   
+    else:
+        pass
+    
+    result = app.response_class(
+        response=json.dumps(data_res),
+        status=200,
+        mimetype='application/json'
+    )
+
+    return result
+
 def Randbackground():
     backgrounds = []
-    for _background in glob.glob(os.path.join(globalParameter['PathBackgroud'], "*.png")):
+    for _background in glob.glob(os.path.join(globalParameter['PathBackground'], "*.png")):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
 
 def OrganizeParameters():    
     backgrounds = []
-    for _background in glob.glob(os.path.join(globalParameter['PathBackgroud'], "*.png")):
+
+    print(globalParameter['PathBackground'])
+
+    for _background in glob.glob(os.path.join(globalParameter['PathBackground'], "*.png")):
         backgrounds.append(globalParameter['flaskstatic_folder'] + _background.split(globalParameter['flaskstatic_folder'])[1])
     globalParameter['background'] = backgrounds[random.randint(0, len(backgrounds)-1)].replace('\\','//')
     #print(globalParameter['background'])
 
-
+    globalParameter['BotImgReaction'].clear()
     for _imgReaction in glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.png")):
         filename = Path(_imgReaction).stem
         globalParameter['BotImgReaction'].append([str(filename).split("_")[0], str(globalParameter['flaskstatic_folder'] + _imgReaction.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//'))])
+    
+        findReactionPoint = False
+        for _botreactionpoints in globalParameter['BotReactionPoints']:
+            if _botreactionpoints[0] == str(filename).split("_")[0].split("_")[0]:
+                findReactionPoint = True
+                break
+        
+        if(findReactionPoint == False):
+            globalParameter['BotReactionPoints'].append([str(filename).split("_")[0].split("_")[0], 0])
+
+    print(globalParameter['BotReactionPoints'])        
     #print(globalParameter['BotImgReaction'])
 
-def LoadParameters():
+def Checklevel():
     global globalParameter
 
-    globalParameter['PathExecutable'] = sys.executable
+    needReorganize = False
+
+    CurrentBackground = globalParameter['CurrentBackground']
+    CurrentAgent = globalParameter['CurrentAgent']
+
+    for _botreactionlevel in globalParameter['BotReactionLevels']:
+        botreactionlevel_feeling = _botreactionlevel[0]
+        botreactionlevel_points = _botreactionlevel[1]
+        botreactionlevel_target = _botreactionlevel[2]
+        botreactionlevel_value = _botreactionlevel[3]
+        for _botreactionpoint in globalParameter['BotReactionPoints']:
+            botreactionpoint_feeling = _botreactionpoint[0]
+            botreactionpoint_points = _botreactionpoint[1]
+            
+            if(botreactionlevel_feeling != botreactionpoint_feeling):
+                continue
+
+            if(int(botreactionlevel_points) > int(botreactionpoint_points)):
+                continue
+
+            if(botreactionlevel_target.lower() == "CurrentAgent".lower()):
+                globalParameter['CurrentAgent'] = botreactionlevel_value
+
+            if(botreactionlevel_target.lower() == "CurrentBackground".lower()):
+                globalParameter['CurrentBackground'] = botreactionlevel_value
+
+    if(CurrentBackground != globalParameter['CurrentBackground'] or CurrentAgent != globalParameter['CurrentAgent']):
+        print('needReorganize')
+        globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
+        globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
+        needReorganize = True
+
+    return needReorganize
+
+def LoadVarsIni2(config,sections):
+    global globalParameter
 
     dir_path = os.path.dirname(os.path.realpath(__file__)) 
-    os.chdir(dir_path)
+    os.chdir(dir_path)    
 
     globalParameter['Path'] = dir_path
-    globalParameter['PathBackgroud'] = os.path.join(globalParameter['Path'],'External','bot','background')
-    globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot','agent')
+    globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
+    globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
 
-    print(globalParameter['Path']) 
-    print(globalParameter['PathBackgroud']) 
-    print(globalParameter['PathAgentReaction']) 
-
-    ini_file = os.path.join(dir_path, 'config.ini')
-    if(os.path.isfile(ini_file) == True):
-        with open(ini_file) as fp:
-            config = configparser.ConfigParser()
-            config.read_file(fp)
-            sections = config.sections()
-            if('Parameters' in sections):
-                for key in config['Parameters']:                    
-                    for globalParameter_key in globalParameter:    
-                        if globalParameter_key.lower()==key.lower():
-                            globalParameter[globalParameter_key]=str(config['Parameters'][key])
-                            print(key + "=" + str(config['Parameters'][key]))
-
-            if('BotImgReaction' in sections):                    
-                for key in config['BotImgReaction']:
-                    #reaction_xxx = image  
-                    #preference for loading image reactions
-                    globalParameter['BotImgReaction'].append([str(key).split("_")[0], str(config['BotImgReaction'][key])])
-                    print([str(key).split("_")[0], str(config['BotImgReaction'][key])])
-                    pass  
-            if('BotReactionTranslations' in sections):                    
-                for key in config['BotReactionTranslations']:
-                    #reaction_xxx = expression  
-                    globalParameter['BotReactionTranslations'].append([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
-                    print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
-                    pass       
-
-            if('MenuLinks' in sections):            
-                globalParameter['MenuLinks'].clear()      
-                for key in config['MenuLinks']:
-                    try:
-                        #my link = https:\\www.meulink.com.br
-                        globalParameter['MenuLinks'].append([str(key), str(config['MenuLinks'][key])])
-                        print([str(key), str(config['MenuLinks'][key])])
-                        pass
-                    except:
-                        pass                                      
+    if('BotImgReaction' in sections):      
+        globalParameter['BotImgReaction'].clear()              
+        for key in config['BotImgReaction']:
+            #reaction_xxx = image  
+            #preference for loading image reactions
+            globalParameter['BotImgReaction'].append([str(key).split("_")[0], str(config['BotImgReaction'][key])])
+            print([str(key).split("_")[0], str(config['BotImgReaction'][key])])
+            pass  
  
-            if('MenuCommands' in sections):            
-                globalParameter['MenuCommands'].clear()      
-                for key in config['MenuCommands']:
-                    #try:
-                    #my command = calc
-                    globalParameter['MenuCommands'].append([str(key), str(config['MenuCommands'][key])])
-                    print([str(key), str(config['MenuCommands'][key])])
-                    pass
-                    #except:
-                    #    pass  
-                                                       
-    OrganizeParameters()
+    if('BotReactionTranslations' in sections):  
+        globalParameter['BotReactionTranslations'].clear()                    
+        for key in config['BotReactionTranslations']:
+            #reaction_xxx = expression  
+            globalParameter['BotReactionTranslations'].append([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
+            print([str(key).split("_")[0], str(config['BotReactionTranslations'][key])])
+            pass   
 
-    jarvis_file = globalParameter['PathJarvis']
-    if(os.path.isfile(jarvis_file) == False):
-        globalParameter['PathJarvis'] = None
-    else:
-        print("Jarvis command enabled")
+    if('BotReactionPoints' in sections):    
+        globalParameter['BotReactionPoints'].clear()                
+        for key in config['BotReactionPoints']:
+            findReactionPoint = False
+            for _botreactionpoints in globalParameter['BotReactionPoints']:
+                if _botreactionpoints[0] == key:
+                    findReactionPoint = True
+                    break
+            
+            if(findReactionPoint == False):
+                globalParameter['BotReactionPoints'].append([key, int(config['BotReactionPoints'][key])])
+            pass  
+    
+    if('BotReactionLevels' in sections):    
+        globalParameter['BotReactionLevels'].clear()                
+        for key in config['BotReactionLevels']:
+            #reaction_xxx = expression  
+            globalParameter['BotReactionLevels'].append([str(key).split("_")[0], str(key).split("_")[1], str(key).split("_")[2], str(config['BotReactionLevels'][key])])
+            print(globalParameter['BotReactionLevels'][-1])
+            pass   
 
-def Main():
+    if('MenuLinks' in sections):            
+        globalParameter['MenuLinks'].clear()      
+        for key in config['MenuLinks']:
+            try:
+                #my link = https:\\www.meulink.com.br
+                globalParameter['MenuLinks'].append([str(key), str(config['MenuLinks'][key])])
+                print([str(key), str(config['MenuLinks'][key])])
+                pass
+            except:
+                pass                                      
+
+    if('MenuCommands' in sections):            
+        globalParameter['MenuCommands'].clear()      
+        for key in config['MenuCommands']:
+            #try:
+            #my command = calc
+            globalParameter['MenuCommands'].append([str(key), str(config['MenuCommands'][key])])
+            print([str(key), str(config['MenuCommands'][key])])
+            pass
+            #except:
+            #    pass  
+
+def MainLocal():
     """interface chat bot aiml (/bot) | Optional parameters: -p (--port) to select target port"""
 
     global globalParameter
 
-    LoadParameters()
-    #globalParameter['MAINWEBSERVER'] = False
+    globalsub.subs(LoadVarsIni, LoadVarsIni2)
+    globalsub.subs(description, description2)    
+
+    GetCorrectPath()
+    Checklevel()
+    OrganizeParameters()
+
+    jarvis_file = globalParameter['PathJarvis']
+    if(globalParameter['PathJarvis']!= None and os.path.isfile(jarvis_file) == False):
+        globalParameter['PathJarvis'] = None
+    else:
+        print("Jarvis command enabled")
 
     try:
         if(globalParameter['MAINWEBSERVER'] == True):
@@ -425,9 +660,10 @@ def Main():
         pass
     except:
         print('error webservice')
-    
+
+
 if __name__ == '__main__':   
-    os.chdir(os.path.dirname(__file__))   
+    os.chdir(os.path.dirname(__file__))
 
     parser = argparse.ArgumentParser(description=Main.__doc__)
     parser.add_argument('-d','--description', help='Description of program', action='store_true')
@@ -436,8 +672,8 @@ if __name__ == '__main__':
     parser.add_argument('-r','--bootresponse', help='Chatbot response input', action='store_true')
     parser.add_argument('-p','--port', help='Service running in target port')
     parser.add_argument('-a','--address', help='Service running in target address')    
-    
-    
+    parser.add_argument('-c','--config', help='Config.ini file')    
+
     args, unknown = parser.parse_known_args()
     args = vars(args)
     train = False 
@@ -471,4 +707,8 @@ if __name__ == '__main__':
         print('TargetAddress: ' + args['address'])
         globalParameter['LocalIp'] = args['address']                    
 
-    Main()
+    if args['config'] is not None:
+        print('Config.ini: ' + args['config'])
+        globalParameter['configFile'] = args['config']  
+
+    MainLocal()
