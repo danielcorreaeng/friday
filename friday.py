@@ -29,6 +29,8 @@ globalParameter['BotReactionPoints'] = []
 globalParameter['BotReactionLevels'] = []
 globalParameter['CommonStatus'] = 'normal'
 globalParameter['MinimumValueToAddTagInAsks'] = 100000000
+globalParameter['HideChatIfButtons'] = True
+globalParameter['GlobalTimerLimit'] = -1
 
 globalParameter['MenuLinks'] = []
 globalParameter['MenuCommands'] = []
@@ -274,7 +276,12 @@ def makePageBot():
             return result;
         }
 
-        document.getElementById("chat_input_00").style.visibility = "hidden";
+    ''' 
+    
+    if(globalParameter["HideChatIfButtons"]==True):
+        PAGE_SPRIPT += '''document.getElementById("chat_input_00").style.visibility = "hidden";'''
+    
+    PAGE_SPRIPT += '''
         buttons = response.slice(1);
         result= response[0];
 
@@ -407,33 +414,75 @@ def botresponsecommand():
 
         return 'Command accepted!'
 
+def SaveDataIni():
+    ini_file = globalParameter['configFile']
+    if(os.path.isfile(ini_file) == True):
+        with open(ini_file) as fp:
+            config = configparser.ConfigParser()
+            config.read_file(fp)
+            sections = config.sections()    
+
+            for _botreactionpoints in globalParameter['BotReactionPoints']:
+                config['BotReactionPoints'][_botreactionpoints[0]] = str(_botreactionpoints[1])
+        
+        with open(ini_file, 'w') as fp:
+            config.write(fp) 
+
+                            
 @app.route('/botreactionpoints',methods = ['POST', 'GET'])
 def botreactionpoints():
     global globalParameter
 
     data_res = {}
+    needreload = False
+    timer = -1
 
     if request.method == 'POST':
         data = request.get_json(force=True)  
         feeling = data['feeling']
 
         for i in range(0,len(globalParameter['BotReactionPoints'])):
-            if globalParameter['BotReactionPoints'][i][0] == globalParameter['CommonStatus']:
+            key = globalParameter['BotReactionPoints'][i][0]        
+
+            if key == 'timer':
+                count = globalParameter['BotReactionPoints'][i][1]
+                globalParameter['BotReactionPoints'][i] = [key,count+1]
+                timer = count + 1               
+
+            if key == globalParameter['CommonStatus']:
                 continue
 
-            if globalParameter['BotReactionPoints'][i][0] == feeling:
-                key = feeling
+            if key == feeling:
                 count = globalParameter['BotReactionPoints'][i][1]
                 globalParameter['BotReactionPoints'][i] = [key,count+1]
         
             data_res[globalParameter['BotReactionPoints'][i][0]] = globalParameter['BotReactionPoints'][i][1]
+
+        if(timer < 0):
+            globalParameter['BotReactionPoints'].append(['timer', 1])
+
+        if(int(globalParameter['GlobalTimerLimit'])>0 and timer>int(globalParameter['GlobalTimerLimit'])):
+            #globalreset
+            for i in range(0,len(globalParameter['BotReactionPoints'])):
+                key = globalParameter['BotReactionPoints'][i][0]
+                count = 0
+                globalParameter['BotReactionPoints'][i] = [key,count]
+            needreload=True
+            SaveDataIni()
+            GetCorrectPath()
+
+        SaveDataIni()
+        
+        if(Checklevel()==True):
+            needreload = True
+
+        if(needreload == True):
+            data_res["needreload"] = 1
+            OrganizeParameters()
+
         pass   
     else:
         pass
-    
-    if(Checklevel()==True):
-        data_res["needreload"] = 1
-        OrganizeParameters()
     
     result = app.response_class(
         response=json.dumps(data_res),
