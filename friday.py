@@ -177,7 +177,7 @@ def makePageBot():
                 <input type="text" id="input-chat" class="form-control" placeholder="chat with me" aria-label="chat with me" aria-describedby="basic-addon2">
                 <div class="input-group-append">
                     <span class="input-group-text" id="basic-addon2">
-                        <a id="buttonchat" href="#" onclick="SendChat();return false;">chat</a>
+                        <a id="buttonchat" href="#">chat</a>
                     </span>
                 </div>
             </div>
