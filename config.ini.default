@@ -21,7 +21,7 @@ angry = 0
 normal = 0
 sad = 0
 surprised = 0
-timer = 0
+timer = 4
 
 [BotReactionLevels]
 happy_10_currentbackground = background-100

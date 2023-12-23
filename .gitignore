@@ -134,3 +134,4 @@ dmypy.json
 # Dani
 External/webfiles
 myconfig.ini
+*.ini
