@@ -4,6 +4,7 @@ import glob
 from pathlib import Path
 from chatbot import *
 import json
+import shutil
    
 #Enable command jarvis
 globalParameter['BotCommandJarvis'] = "[Jarvis]"
@@ -512,7 +513,10 @@ def OrganizeParameters():
     #print(globalParameter['background'])
 
     globalParameter['BotImgReaction'].clear()
-    for _imgReaction in glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.png")):
+    _imgReactionList = glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.png"))
+    _imgReactionList.extend(glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.gif")))
+    _imgReactionList.extend(glob.glob(os.path.join(globalParameter['PathAgentReaction'], "*.jpg")))
+    for _imgReaction in _imgReactionList:
         filename = Path(_imgReaction).stem
         globalParameter['BotImgReaction'].append([str(filename).split("_")[0], str(globalParameter['flaskstatic_folder'] + _imgReaction.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//'))])
     
@@ -706,6 +710,14 @@ if __name__ == '__main__':
     if args['address'] is not None:
         print('TargetAddress: ' + args['address'])
         globalParameter['LocalIp'] = args['address']                    
+
+    fileConfiName = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini")
+    fileConfiNameDefault = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini.default")
+
+    if(os.path.isfile(fileConfiName) == False):
+        if(os.path.isfile(fileConfiNameDefault) == True):
+            shutil.copyfile(fileConfiNameDefault, fileConfiName)
+            pass
 
     if args['config'] is not None:
         print('Config.ini: ' + args['config'])
