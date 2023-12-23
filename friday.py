@@ -711,11 +711,13 @@ if __name__ == '__main__':
         print('TargetAddress: ' + args['address'])
         globalParameter['LocalIp'] = args['address']                    
 
-    fileConfiNameDefault = os.path.join(globalParameter['PathLocal'], "config.ini.default")
+    fileConfiName = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini")
+    fileConfiNameDefault = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini.default")
 
-    if(os.path.isfile(globalParameter['configFile']) == False):
+    if(os.path.isfile(fileConfiName) == False):
         if(os.path.isfile(fileConfiNameDefault) == True):
-            shutil.copyfile(fileConfiNameDefault, globalParameter['configFile'])
+            shutil.copyfile(fileConfiNameDefault, fileConfiName)
+            pass
 
     if args['config'] is not None:
         print('Config.ini: ' + args['config'])
