@@ -5,6 +5,8 @@ allowedexternalrecordbase = external
 currentagent = agent-100
 currentbackground = background-000
 globaltimerlimit = -1
+-BotIp=127.0.0.1:8805
+-BotIp4Learn=127.0.0.10:8821
 
 [BotReactionTranslations]
 happy_000 = kkk

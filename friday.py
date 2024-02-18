@@ -650,6 +650,7 @@ def MainLocal():
     GetCorrectPath()
     Checklevel()
     OrganizeParameters()
+    globalParameter['TriggerTagsList'] = str(globalParameter['TriggerTags']).split(',')    
 
     jarvis_file = globalParameter['PathJarvis']
     if(globalParameter['PathJarvis']!= None and os.path.isfile(jarvis_file) == False):
