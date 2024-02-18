@@ -40,7 +40,7 @@ globalParameter['TriggerTags'] = '[img],[file],[link],[raw],[jsonnote],[jsonlink
 globalParameter['TriggerTagsList'] = []
 globalParameter['BotIp4Learn'] = None
 
-#chatbot jarvis updated Fev 18, 2024 - https://github.com/danielcorreaeng/jarvis
+#chatbot jarvis updated Feb 18, 2024 - https://github.com/danielcorreaeng/jarvis
 
 app = Flask(__name__, static_url_path="/" + globalParameter['flaskstatic_folder'], static_folder=globalParameter['flaskstatic_folder'])
 CORS(app)
@@ -69,21 +69,21 @@ def RunJarvis(tags):
 
 def ChatBotExternal(message, BotIp):
     result = None
-    #try:
-    request = requests.get('http://' + BotIp)
-    if request.status_code == 200:
-        localTime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")
-        data = {'ask' : message , 'user' : globalParameter['LocalUsername'] , 'host' : globalParameter['LocalHostname'] , 'command' : None , 'time' : localTime , 'status' : 'start'}
+    try:
+        request = requests.get('http://' + BotIp)
+        if request.status_code == 200:
+            localTime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")
+            data = {'ask' : message , 'user' : globalParameter['LocalUsername'] , 'host' : globalParameter['LocalHostname'] , 'command' : None , 'time' : localTime , 'status' : 'start'}
 
-        url = "http://" + BotIp + "/botresponse"
-        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        r = requests.post(url, data=json.dumps(data), headers=headers)
-        result = r.text
-    else:
+            url = "http://" + BotIp + "/botresponse"
+            headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+            r = requests.post(url, data=json.dumps(data), headers=headers)
+            result = r.text
+        else:
+            result = None
+    except:
         result = None
-    #except:
-    #    result = None
-    #    pass
+        pass
 
     return result
 
