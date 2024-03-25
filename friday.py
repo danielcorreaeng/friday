@@ -183,6 +183,7 @@ def makePageBot():
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="modal1" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true"><div class="modal-dialog" role="document"><div class="modal-content"><div class="modal-header">test</div><div class="modal-body"><div id="divmodal1"><img id="imgmodal1" style="width:100%"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div></div></div></div>
     '''
     PAGE_BODY += '</body>'
 
@@ -207,6 +208,8 @@ def makePageBot():
 
         $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
         
+        //$(document).ready(function(){$('#modal1').modal('show');} );
+
         var img_agent = document.getElementById("agent");
         var chat = document.getElementById("input-chat");
     '''
