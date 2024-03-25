@@ -195,7 +195,16 @@ def makePageBot():
         var time_out_reaction;
         var time_out_reaction_delay = 20000;
         var top_reaction = '';
-        
+
+        var chat_animation = [];
+        chat_animation.push(".....");
+        chat_animation.push("·....");
+        chat_animation.push(".·...");
+        chat_animation.push("..·..");
+        chat_animation.push("...·.");
+        chat_animation.push("....·");
+        var chat_animation_id = 0;
+
         $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
         
         var img_agent = document.getElementById("agent");
@@ -316,8 +325,24 @@ def makePageBot():
             //document.getElementById(id).style.width = "100%";
         }
     '''    
+    PAGE_SPRIPT += '''\nfunction ChatAnimation()
+    {
+        var response_chat = document.getElementById("responsechat");
+
+        response_chat.innerHTML = chat_animation[chat_animation_id];
+        chat_animation_id = chat_animation_id + 1;
+        console.log(chat_animation_id);
+
+        if(chat_animation.length <= chat_animation_id)
+        {
+            chat_animation_id = 0;
+        }
+    }
+    '''
+
     PAGE_SPRIPT += '''\n
         function SendMessageBot(){
+            var intervalId = setInterval(ChatAnimation, 500);
             var img_agent = document.getElementById("agent");  
             var chat = document.getElementById("input-chat"); 
             var response_chat = document.getElementById("responsechat");
@@ -336,7 +361,8 @@ def makePageBot():
             xhr.setRequestHeader("Access-Control-Allow-Origin", link);
             xhr.onreadystatechange = function() { 
                 if (this.readyState === XMLHttpRequest.DONE && this.status === 200) 
-                {	
+                {
+                    clearInterval(intervalId);
                     response_chat.innerHTML = GetTags(xhr.responseText); 
                     feeling = GetReactionTranslations(xhr.responseText);
                     SetImageReaction(feeling); 
