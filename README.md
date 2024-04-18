@@ -52,6 +52,10 @@ For training with button in answer
 
     [learn] ask [answer] answer [button] button 1 [button] button 2 [button] button 3 [button] button 4  
 
+For training with image in answer
+
+    [learn] ask [answer] answer [image] https://images.address.jpg
+
 
 
     

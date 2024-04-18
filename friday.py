@@ -184,6 +184,27 @@ def makePageBot():
                 </div>
             </div>
         </div>
+
+    '''
+
+    PAGE_BODY += '''    
+        <div class="modal fade" id="modal2" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" id="txtmodal2">test</div>
+                    <div class="modal-body">
+                        <div id="divmodal2">
+                            <img id="imgmodal2" style="width:100%">
+                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    '''
+
+    PAGE_BODY += '''    
         <div class="modal fade" id="modal1" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -249,7 +270,8 @@ def makePageBot():
 
         $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
         
-        $(document).ready(function(){$('#modal1').modal('show');} );
+        //test
+        //$(document).ready(function(){$('#modal2').modal('show');} );
 
         var img_agent = document.getElementById("agent");
         var chat = document.getElementById("input-chat");
@@ -318,29 +340,37 @@ def makePageBot():
             result = result.replace('[' + list_reaction_tags[id] + ']', "");
         }        
 
+        //image
+        var response = result.split("[image]");
+        if(response.length>1)
+        {
+            result= response[0];
+            image = response[1];
+            document.getElementById("txtmodal2").innerHTML=result;
+            document.getElementById("imgmodal2").src=image;
+            $('#modal2').modal('show');
+        }    
+
+        //buttons
         buttonshow('chat_button_0');
         buttonshow('chat_button_1');
         buttonshow('chat_button_2');
         buttonshow('chat_button_3');        
 
-        var response = text.split("[button]");
-
-        if(response.length<=1)
+        var response = result.split("[button]");
+        if(response.length>1)
         {
-            return result;
-        }
-
-    ''' 
-    
+        ''' 
     if(globalParameter["HideChatIfButtons"]==True):
         PAGE_SPRIPT += '''document.getElementById("chat_input_00").style.visibility = "hidden";'''
     
     PAGE_SPRIPT += '''
-        buttons = response.slice(1);
-        result= response[0];
+            buttons = response.slice(1);
+            result= response[0];
 
-        for (let i=0; i<Math.min(buttons.length,4); i++)  {
-            buttonshow('chat_button_' + i.toString(), 'button_' + i.toString(), true, buttons[i]); 
+            for (let i=0; i<Math.min(buttons.length,4); i++)  {
+                buttonshow('chat_button_' + i.toString(), 'button_' + i.toString(), true, buttons[i]); 
+            }
         }
 
         return result;
