@@ -88,6 +88,7 @@ def makePageBot():
     ext_jquery_js = 'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js'
     ext_bootstrap_js = 'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js'    
     ext_font_awesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
+    ext_popper = 'https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js'    
 
     background = globalParameter['background']
     img_max_height_mobile = globalParameter['img_max_height_mobile']
@@ -111,7 +112,7 @@ def makePageBot():
     PAGE_STYLE += '.chat {z-index: 1500;display: block;margin: 20px auto;max-width: 90%;} '
     PAGE_STYLE += '.maxup {z-index: 3000}'
     PAGE_STYLE += '</style>'
-    PAGE_STYLE += '<link href="' + ext_bootstrap_css + '" rel="stylesheet" crossorigin="anonymous"><script src="' + ext_jquery_js + '"></script>'
+    PAGE_STYLE += '<link href="' + ext_bootstrap_css + '" rel="stylesheet" crossorigin="anonymous">'
     PAGE_STYLE += '<link rel="stylesheet" href="' + ext_font_awesome + '">'
     PAGE_HEAD = PAGE_HEAD + PAGE_STYLE + '</head>'
 
@@ -183,11 +184,51 @@ def makePageBot():
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="modal1" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true"><div class="modal-dialog" role="document"><div class="modal-content"><div class="modal-header">test</div><div class="modal-body"><div id="divmodal1"><img id="imgmodal1" style="width:100%"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div></div></div></div>
+        <div class="modal fade" id="modal1" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">test</div>
+                    <div class="modal-body">
+                        <div id="divmodal1">
+                            <img id="imgmodal1" style="width:100%">
+
+                            <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
+                                <div class="carousel-indicators"> 
+                                    <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                                    <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                                </div>
+                                <div class="carousel-inner">
+                                    <div class="carousel-item active">                            
+                                        <img src="https://www.infoescola.com/wp-content/uploads/2008/04/planeta-terra_585359906.jpg" class="d-block w-100" alt="...">
+                                    </div>
+                                    <div class="carousel-item">                            
+                                        <img src="https://socientifica.com.br/wp-content/uploads/2021/11/bigstock-Earth-viewed-from-space-with-f-228805126-1536x1229.jpg" class="d-block w-100" alt="...">
+                                    </div>                                    
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                                </button>
+                            </div>
+
+
+                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     '''
     PAGE_BODY += '</body>'
 
-    PAGE_SPRIPT = '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
+    PAGE_SPRIPT = '<script src="' + ext_popper + '" crossorigin="anonymous"></script>'
+    PAGE_SPRIPT += '<script src="' + ext_bootstrap_js + '" crossorigin="anonymous"></script>'
+    PAGE_SPRIPT += '<script src="' + ext_jquery_js + '"></script>'
     PAGE_SPRIPT += '''<script>
         var img_agent_reaction = [];
         var dict_img_agent_reaction_lenghts = [];
@@ -208,7 +249,7 @@ def makePageBot():
 
         $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
         
-        //$(document).ready(function(){$('#modal1').modal('show');} );
+        $(document).ready(function(){$('#modal1').modal('show');} );
 
         var img_agent = document.getElementById("agent");
         var chat = document.getElementById("input-chat");
