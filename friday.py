@@ -13,9 +13,11 @@ globalParameter['BotCommandLearn'] = "[learn]"
 #Loading in GetCorrectPath()
 globalParameter['Path'] = None
 globalParameter['PathBackground'] = None
+globalParameter['PathPhotobook'] = None
 globalParameter['PathAgentReaction'] = None
 globalParameter['CurrentAgent'] = "agent-100"
 globalParameter['CurrentBackground'] = "background-000"
+globalParameter['CurrentPhotobook'] = None
 
 globalParameter['LocalPort'] = 8821
 globalParameter['LocalIp'] = "0.0.0.0"
@@ -23,6 +25,8 @@ globalParameter['MAINWEBSERVER'] = True
 globalParameter['PathDB'] = "db.sqlite3"
 globalParameter['maximum_similarity_threshold'] = 0.80
 globalParameter['BotIp'] = None
+
+globalParameter['PhotobookImgs'] = []
 
 globalParameter['BotImgReaction'] = []
 globalParameter['BotReactionTranslations'] = []
@@ -144,6 +148,11 @@ def makePageBot():
             PAGE_BODY += """<a class="dropdown-item" onclick="SendMessageInputChat('"""+ globalParameter['BotCommandJarvis'] + """ """ + list_links[1] + """')" href="#">""" + list_links[0] + """</a>"""
         PAGE_BODY += '</div>'
 
+    #images
+    PAGE_BODY += '<button class="btn btn-secondary" type="button" id="buttonmodal1">'
+    PAGE_BODY += '<i class="fa fa-picture-o" aria-hidden="true"></i>'
+    PAGE_BODY += '</button>'
+
     #points
     PAGE_BODY += '''
         <div style="margin-left: 80%; margin-right: 5%; position: relative; overflow-y: auto; max-height:70%;"> 
@@ -188,43 +197,20 @@ def makePageBot():
     '''
 
     PAGE_BODY += '''    
-        <div class="modal fade" id="modal2" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header" id="txtmodal2">test</div>
-                    <div class="modal-body">
-                        <div id="divmodal2">
-                            <img id="imgmodal2" style="width:100%">
-                        </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    '''
-
-    PAGE_BODY += '''    
         <div class="modal fade" id="modal1" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
-                    <div class="modal-header">test</div>
+                    <div class="modal-header">Photos</div>
                     <div class="modal-body">
                         <div id="divmodal1">
                             <img id="imgmodal1" style="width:100%">
 
                             <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
-                                <div class="carousel-indicators"> 
-                                    <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                                    <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                                <div class="carousel-indicators" id="carousel-indicators-000"> 
+
                                 </div>
-                                <div class="carousel-inner">
-                                    <div class="carousel-item active">                            
-                                        <img src="https://www.infoescola.com/wp-content/uploads/2008/04/planeta-terra_585359906.jpg" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item">                            
-                                        <img src="https://socientifica.com.br/wp-content/uploads/2021/11/bigstock-Earth-viewed-from-space-with-f-228805126-1536x1229.jpg" class="d-block w-100" alt="...">
-                                    </div>                                    
+                                <div class="carousel-inner" id="carousel-inner-000">
+                                                                                                           
                                 </div>
                                 <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -245,6 +231,24 @@ def makePageBot():
             </div>
         </div>
     '''
+
+    PAGE_BODY += '''    
+        <div class="modal fade" id="modal2" style="z-index:10000" tabindex="1000 role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" id="txtmodal2">test</div>
+                    <div class="modal-body">
+                        <div id="divmodal2">
+                            <img id="imgmodal2" style="width:100%">
+                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    '''
+
     PAGE_BODY += '</body>'
 
     PAGE_SPRIPT = '<script src="' + ext_popper + '" crossorigin="anonymous"></script>'
@@ -269,13 +273,38 @@ def makePageBot():
         var chat_animation_id = 0;
 
         $(document).ready(function(){$("input:text").focus(function() { $(this).select(); } );
-        
-        //test
-        //$(document).ready(function(){$('#modal2').modal('show');} );
 
         var img_agent = document.getElementById("agent");
-        var chat = document.getElementById("input-chat");
+        var chat = document.getElementById("input-chat");        
     '''
+
+    if(len(globalParameter['PhotobookImgs'])>0):
+
+        carouselIndicators = ""
+        carouselInner = ""
+        id = 0
+        for photo in globalParameter['PhotobookImgs']:
+            
+            if(id == 0):
+                carouselIndicators += '<button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="' + str(id) + '" class="active" aria-current="true" aria-label="Slide ' + str(id) + '"></button>'
+                carouselInner +='<div class="carousel-item active">'
+            else:
+                carouselIndicators += '<button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="' + str(id) + '" aria-current="true" aria-label="Slide ' + str(id) + '"></button>'
+                carouselInner +='<div class="carousel-item">'
+
+            carouselInner +='<img src="' + photo + '" class="d-block w-100" alt="...">'
+            carouselInner +='</div> '
+
+            id = id+1
+
+        PAGE_SPRIPT += '''
+            document.getElementById("buttonmodal1").onclick = function() {
+                $('#modal1').modal('show');
+                document.getElementById("carousel-indicators-000").innerHTML=`''' + carouselIndicators + ''' `;
+                                       
+                document.getElementById("carousel-inner-000").innerHTML=`''' + carouselInner + '''`;
+            }   
+        '''
 
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    
@@ -405,7 +434,7 @@ def makePageBot():
 
         response_chat.innerHTML = chat_animation[chat_animation_id];
         chat_animation_id = chat_animation_id + 1;
-        console.log(chat_animation_id);
+        //console.log(chat_animation_id);
 
         if(chat_animation.length <= chat_animation_id)
         {
@@ -632,6 +661,13 @@ def OrganizeParameters():
     print(globalParameter['BotReactionPoints'])        
     #print(globalParameter['BotImgReaction'])
 
+    globalParameter['PhotobookImgs'].clear()
+    _imgPhotobookList = glob.glob(os.path.join(globalParameter['PathPhotobook'], "*.png"))
+    _imgPhotobookList.extend(glob.glob(os.path.join(globalParameter['PathPhotobook'], "*.gif")))
+    _imgPhotobookList.extend(glob.glob(os.path.join(globalParameter['PathPhotobook'], "*.jpg")))
+    for _imgPhotobook in _imgPhotobookList:
+        globalParameter['PhotobookImgs'].append(str(globalParameter['flaskstatic_folder'] + _imgPhotobook.split(globalParameter['flaskstatic_folder'])[1].replace('\\','//')))        
+
 def Checklevel():
     global globalParameter
 
@@ -639,6 +675,7 @@ def Checklevel():
 
     CurrentBackground = globalParameter['CurrentBackground']
     CurrentAgent = globalParameter['CurrentAgent']
+    CurrentPhotobook = globalParameter['CurrentPhotobook']
 
     for _botreactionlevel in globalParameter['BotReactionLevels']:
         botreactionlevel_feeling = _botreactionlevel[0]
@@ -661,10 +698,14 @@ def Checklevel():
             if(botreactionlevel_target.lower() == "CurrentBackground".lower()):
                 globalParameter['CurrentBackground'] = botreactionlevel_value
 
-    if(CurrentBackground != globalParameter['CurrentBackground'] or CurrentAgent != globalParameter['CurrentAgent']):
+            if(botreactionlevel_target.lower() == "CurrentPhotobook".lower()):
+                globalParameter['CurrentPhotobook'] = botreactionlevel_value                
+
+    if(CurrentBackground != globalParameter['CurrentBackground'] or CurrentAgent != globalParameter['CurrentAgent'] or CurrentPhotobook != globalParameter['CurrentPhotobook']):
         print('needReorganize')
         globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
         globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
+        globalParameter['PathPhotobook'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentPhotobook'])
         needReorganize = True
 
     return needReorganize
@@ -678,6 +719,7 @@ def LoadVarsIni2(config,sections):
     globalParameter['Path'] = dir_path
     globalParameter['PathBackground'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentBackground'] )
     globalParameter['PathAgentReaction'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentAgent'])
+    globalParameter['PathPhotobook'] = os.path.join(globalParameter['Path'],'External','bot',globalParameter['CurrentPhotobook'])
 
     if('BotImgReaction' in sections):      
         globalParameter['BotImgReaction'].clear()              
