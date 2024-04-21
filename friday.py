@@ -299,13 +299,14 @@ def makePageBot():
 
         PAGE_SPRIPT += '''
             document.getElementById("buttonmodal1").display = 'block';
+            document.getElementById("buttonmodal1").style.background = '#2798ed';
             document.getElementById("buttonmodal1").onclick = function() {
-                $('#modal1').modal('show');
-                document.getElementById("carousel-indicators-000").innerHTML=`''' + carouselIndicators + ''' `;
-                                       
+                document.getElementById("carousel-indicators-000").innerHTML=`''' + carouselIndicators + ''' `;                                       
                 document.getElementById("carousel-inner-000").innerHTML=`''' + carouselInner + '''`;
+                $('#modal1').modal('show');
+                document.getElementById("buttonmodal1").style.background = '#6c757d';
             }  
-            $(document).ready(function() {$('#buttonmodal1').click();}); 
+            //$(document).ready(function() {$('#buttonmodal1').click();}); 
         '''
     else:
          PAGE_SPRIPT += '''         
