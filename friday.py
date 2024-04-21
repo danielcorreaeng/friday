@@ -17,7 +17,7 @@ globalParameter['PathPhotobook'] = None
 globalParameter['PathAgentReaction'] = None
 globalParameter['CurrentAgent'] = "agent-100"
 globalParameter['CurrentBackground'] = "background-000"
-globalParameter['CurrentPhotobook'] = None
+globalParameter['CurrentPhotobook'] = "photobook-000"
 
 globalParameter['LocalPort'] = 8821
 globalParameter['LocalIp'] = "0.0.0.0"
@@ -298,13 +298,19 @@ def makePageBot():
             id = id+1
 
         PAGE_SPRIPT += '''
+            document.getElementById("buttonmodal1").display = 'block';
             document.getElementById("buttonmodal1").onclick = function() {
                 $('#modal1').modal('show');
                 document.getElementById("carousel-indicators-000").innerHTML=`''' + carouselIndicators + ''' `;
                                        
                 document.getElementById("carousel-inner-000").innerHTML=`''' + carouselInner + '''`;
-            }   
+            }  
+            $(document).ready(function() {$('#buttonmodal1').click();}); 
         '''
+    else:
+         PAGE_SPRIPT += '''         
+            document.getElementById("buttonmodal1").style.display = 'none';
+        '''       
 
     for list_img_reaction in globalParameter['BotImgReaction']:
         PAGE_SPRIPT += 'img_agent_reaction.push(["' + list_img_reaction[0] + '","' + list_img_reaction[1] + '"]);'    

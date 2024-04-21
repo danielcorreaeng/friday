@@ -4,6 +4,7 @@ botcommandjarvis = Execute
 allowedexternalrecordbase = external
 currentagent = agent-100
 currentbackground = background-000
+currentphotobook = photobook-000
 globaltimerlimit = -1
 -BotIp=127.0.0.1:8805
 -BotIp4Learn=127.0.0.10:8821
@@ -28,7 +29,8 @@ timer = 4
 [BotReactionLevels]
 happy_10_currentbackground = background-100
 happy_20_currentbackground = background-101
-happy_30_currentagent = agent-101
+happy_130_currentagent = agent-101
+wtf_130_currentphotobook = photobook-001
 
 [MenuLinks]
 tradutor = https://translate.google.com.br/?hl=pt-BR
