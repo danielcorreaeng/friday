@@ -262,6 +262,7 @@ def makePageBot():
         var time_out_reaction;
         var time_out_reaction_delay = 20000;
         var top_reaction = '';
+        var feelings = {};
 
         var chat_animation = [];
         chat_animation.push(".....");
@@ -395,7 +396,7 @@ def makePageBot():
 
         var response = result.split("[button]");
         if(response.length>1)
-        {
+        {        
         ''' 
     if(globalParameter["HideChatIfButtons"]==True):
         PAGE_SPRIPT += '''document.getElementById("chat_input_00").style.visibility = "hidden";'''
@@ -405,7 +406,24 @@ def makePageBot():
             result= response[0];
 
             for (let i=0; i<Math.min(buttons.length,4); i++)  {
-                buttonshow('chat_button_' + i.toString(), 'button_' + i.toString(), true, buttons[i]); 
+                begin = buttons[i].indexOf("[req-");
+                _enable = true
+                if(begin !== -1)
+                {
+                    end = buttons[i].indexOf("]");
+                    if(end !== -1)
+                    {                        
+                        req = buttons[i].substring(begin+1+4, end+1-1)
+                        if(req.indexOf("-") !== -1)
+                        {
+                            
+                        }
+                        console.log(req);
+                        buttons[i] = buttons[i].split("]").slice(1);
+                    }
+                } 
+
+                buttonshow('chat_button_' + i.toString(), 'button_' + i.toString(), true, buttons[i], _enable); 
             }
         }
 
@@ -421,16 +439,31 @@ def makePageBot():
     PAGE_SPRIPT += '''\nfunction SendChat() {SendMessageBot(); document.getElementById("chat_input_00").style.visibility = "visible";}'''
     PAGE_SPRIPT += '''\nfunction SendMessageInputChat(text) {document.getElementById("input-chat").value=text}'''
     PAGE_SPRIPT += '''
-        function buttonshow(_div, _button="none", show=false, bt_value="button") {
+        function buttonshow(_div, _button="none", show=false, bt_value="button", _enable=true) {
         
             if(show==true)
             {
+                localbutton = document.getElementById(_button);
                 document.getElementById(_div).style.visibility = "visible";
-                document.getElementById(_button).value = bt_value;
+                localbutton.value = bt_value;
             }
             else
             {
                 document.getElementById(_div).style.visibility = "hidden";
+            }
+
+            if(_button == "none")
+            {
+                return;
+            }
+
+            if(_enable == true)
+            {
+                localbutton.disabled = false;
+            }
+            else
+            {
+                localbutton.disabled = true;
             }
             //document.getElementById(id).style.width = "100%";
         }
@@ -513,7 +546,8 @@ def makePageBot():
                         var biggest_value = ''' + str(globalParameter['MinimumValueToAddTagInAsks']) + ''';
                         for (let key in data) {
                             points_text = points_text + key + ": " + data[key] + "<br>";
-                            console.log(key + ": "+ data[key])
+                            //console.log(key + ": "+ data[key])
+                            feelings[key] = data[key]
 
                             var value = parseInt(data[key]);
                             if(value > biggest_value)
@@ -524,7 +558,8 @@ def makePageBot():
                         }
                         score.innerHTML = points_text;
                         top_reaction = biggest_key;
-                        console.log("top feeling (after filter): " + biggest_key)
+                        //console.log("top feeling (after filter): " + biggest_key)
+                        //console.log(feelings);
                     } 
                 }
             };
@@ -799,6 +834,7 @@ def MainLocal():
     GetCorrectPath()
     Checklevel()
     OrganizeParameters()
+
     globalParameter['TriggerTagsList'] = str(globalParameter['TriggerTags']).split(',')    
 
     jarvis_file = globalParameter['PathJarvis']
