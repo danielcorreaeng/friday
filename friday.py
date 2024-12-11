@@ -131,7 +131,11 @@ def makePageBot():
     PAGE_BODY += '</button>'
     PAGE_BODY += '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'
     for list_links in globalParameter['MenuLinks']:
-        PAGE_BODY += '<a class="dropdown-item" href="' + list_links[1] + '" target="_blank">' + list_links[0] + '</a>'  
+        link = list_links[1]
+        if(link.find("<serverwoport>")>=0):
+            url = str(request.url_root)[:-1].replace(':'+ str(globalParameter['LocalPort']),'')
+            link = link.replace("<serverwoport>", url)        
+        PAGE_BODY += '<a class="dropdown-item" href="' + link + '" target="_blank">' + list_links[0] + '</a>'  
     PAGE_BODY += '</div>'
 
     #command

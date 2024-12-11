@@ -35,6 +35,7 @@ wtf_130_currentphotobook = photobook-001
 [MenuLinks]
 tradutor = https://translate.google.com.br/?hl=pt-BR
 world time = https://www.worldtimebuddy.com/est-to-brazil-brasilia
+services = <serverwoport>:8811/list/services
 
 [MenuCommands]
 calc = calc
