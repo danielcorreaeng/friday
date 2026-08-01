@@ -57,7 +57,8 @@ def description2():
 
 @app.route('/reload')
 def ReloadParameters():
-    GetCorrectPath() #LoadVarsIni2()
+    GetCorrectPath() 
+    #LoadVarsIni2()
     OrganizeParameters()
     return 'ok'
 

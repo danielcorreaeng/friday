@@ -45,7 +45,7 @@ globalParameter['TriggerTagsList'] = []
 globalParameter['BotIp4Learn'] = None
 globalParameter['BotName'] = 'Jarvis'
 
-#chatbot jarvis updated Abril 15, 2025 - https://github.com/danielcorreaeng/jarvis
+#chatbot jarvis updated July 30, 2026 - https://github.com/danielcorreaeng/jarvis
 
 app = Flask(__name__, static_url_path="/" + globalParameter['flaskstatic_folder'], static_folder=globalParameter['flaskstatic_folder'])
 CORS(app)
@@ -467,7 +467,7 @@ def GetCorrectPath():
             ini_file = os.path.join(dir_path, '..', '..', globalParameter['configFile'])
             if(os.path.isfile(ini_file) == False):
                 return
-
+    
     globalParameter['PathExecutable'] = sys.executable
     globalParameter['PathLocal'] = os.path.dirname(os.path.realpath(jarvis_file))
     globalParameter['PathJarvis'] = jarvis_file
